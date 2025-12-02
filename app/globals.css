@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-gray-100;
+  }
+
+  /* Micro-animations */
+  @keyframes glow-fade {
+    0% {
+      opacity: 0;
+    }
+
+    50% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-highlight {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes badge-fade {
+    from {
+      opacity: 0.6;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-dark-surface rounded-2xl p-4 border border-gray-800/20 shadow-sm relative overflow-hidden;
+    background-image: linear-gradient(135deg, transparent, rgba(16, 185, 129, 0.02));
+  }
+
+  .card-light {
+    @apply bg-dark-surface-light rounded-2xl p-4 border border-gray-800/20 shadow-sm relative overflow-hidden;
+    background-image: linear-gradient(135deg, transparent, rgba(16, 185, 129, 0.02));
+  }
+
+  .nature-accent {
+    @apply text-accent-leaf;
+  }
+
+  .tech-accent {
+    @apply text-accent-sky;
+  }
+
+  .organic-glow {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+  }
+
+  /* Micro-animation utilities */
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  }
+
+  .nav-highlight {
+    animation: slide-highlight 0.3s ease-out;
+  }
+
+  .badge-animate {
+    animation: badge-fade 0.4s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
