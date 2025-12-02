@@ -4,6 +4,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { Baglet, BagletStatus } from '@/lib/types';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const statusVariantMap: Record<BagletStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
   [BagletStatus.Planned]: 'info',
@@ -24,7 +25,29 @@ function formatDate(date: Date | string | null | undefined): string {
   });
 }
 
-export default function RecentBaglets({ baglets }: { baglets: Baglet[] }) {
+export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[], loading?: boolean }) {
+  if (loading) {
+    return (
+      <Card>
+        <div className="flex items-center justify-between mb-4 md:mb-5">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800/10">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
   const recent = baglets.slice(0, 5);
 
   return (

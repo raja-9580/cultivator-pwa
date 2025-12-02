@@ -9,7 +9,9 @@ import Badge from '@/components/ui/Badge';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import CreateBatchModal from '@/components/batches/CreateBatchModal';
 import BatchCard from '@/components/batches/BatchCard';
+import QrScanner from '@/components/ui/QrScanner';
 import { MUSHROOM_TYPES, BatchStatus, Batch } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const statusVariantMap: Record<BatchStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
   [BatchStatus.Planned]: 'info',
@@ -41,7 +43,9 @@ export default function BatchesPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [updatingBatch, setUpdatingBatch] = useState<string | null>(null);
+  const router = useRouter();
 
   async function fetchBatches() {
     try {
@@ -91,6 +95,13 @@ export default function BatchesPage() {
       setUpdatingBatch(null);
     }
   }
+
+  const handleScan = (decodedText: string) => {
+    setIsScannerOpen(false);
+    // Navigate to baglets page with search filter
+    // Assuming the QR code contains the Baglet ID directly
+    router.push(`/baglets?search=${encodeURIComponent(decodedText)}`);
+  };
 
   useEffect(() => {
     fetchBatches();
@@ -297,13 +308,23 @@ export default function BatchesPage() {
         onSuccess={fetchBatches}
       />
 
+      <QrScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScan}
+      />
+
       <FloatingActionButton actions={[
         {
           label: 'Create Batch',
           icon: '➕',
           onClick: () => setIsCreateModalOpen(true)
         },
-        { label: 'QR Scan', icon: '📱', href: '/batches' },
+        {
+          label: 'QR Scan',
+          icon: '📱',
+          onClick: () => setIsScannerOpen(true)
+        },
       ]} />
     </div>
   );

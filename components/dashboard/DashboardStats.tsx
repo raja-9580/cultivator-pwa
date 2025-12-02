@@ -1,4 +1,5 @@
 import Card from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface StatCardProps {
   label: string;
@@ -7,7 +8,25 @@ interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
-export default function DashboardStats({ stats }: { stats: StatCardProps[] }) {
+export default function DashboardStats({ stats, loading }: { stats: StatCardProps[], loading?: boolean }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 mb-6 md:mb-8">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border-l-4 border-l-gray-800 p-3 md:p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="w-full">
+                <Skeleton className="h-3 w-20 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded-full opacity-50" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 mb-6 md:mb-8">
       {stats.map((stat, idx) => (
