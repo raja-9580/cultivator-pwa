@@ -4,7 +4,11 @@
 
 @layer base {
   body {
-    @apply bg-dark-bg text-gray-100;
+    @apply bg-dark-bg text-gray-100 font-sans antialiased selection:bg-accent-neon-green/30;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.1), transparent 25%);
+    background-attachment: fixed;
   }
 
   /* Micro-animations */
@@ -56,14 +60,22 @@
 }
 
 @layer components {
-  .card {
-    @apply bg-dark-surface rounded-2xl p-4 border border-gray-800/20 shadow-sm relative overflow-hidden;
-    background-image: linear-gradient(135deg, transparent, rgba(16, 185, 129, 0.02));
+  .glass-panel {
+    @apply bg-glass-surface border border-glass-border shadow-card;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  .card-light {
-    @apply bg-dark-surface-light rounded-2xl p-4 border border-gray-800/20 shadow-sm relative overflow-hidden;
-    background-image: linear-gradient(135deg, transparent, rgba(16, 185, 129, 0.02));
+  .card {
+    @apply glass-panel rounded-2xl p-4 relative overflow-hidden transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply bg-white/5 border-white/10;
+  }
+
+  .card-highlight {
+    @apply bg-accent-neon-green/10 border-accent-neon-green/20 text-accent-neon-green;
   }
 
   .nature-accent {

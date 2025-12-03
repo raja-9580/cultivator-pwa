@@ -62,7 +62,7 @@ export default function RecentBatches({ batches, loading }: { batches: Batch[], 
       <div className="overflow-x-auto">
         <table className="w-full text-xs md:text-sm">
           <thead>
-            <tr className="border-b border-gray-800/20 bg-dark-surface-light/60 backdrop-blur-sm">
+            <tr className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
               <th className="text-left py-2.5 md:py-3 px-2 md:px-3 font-semibold text-gray-200 text-xs">
                 Batch ID
               </th>
@@ -84,10 +84,10 @@ export default function RecentBatches({ batches, loading }: { batches: Batch[], 
             {recent.map((batch) => (
               <tr
                 key={batch.id}
-                className="border-b border-gray-800/10 hover:bg-dark-surface-light/15 transition-colors"
+                className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
                 <td className="py-3 md:py-3.5 px-2 md:px-3">
-                  <Link href={`/batches/${batch.id}`} className="text-accent-leaf hover:text-accent-sky transition-colors text-xs md:text-sm font-medium">
+                  <Link href={`/batches/${batch.id}`} className="text-accent-neon-green hover:text-accent-neon-blue transition-colors text-xs md:text-sm font-medium">
                     {batch.id}
                   </Link>
                 </td>

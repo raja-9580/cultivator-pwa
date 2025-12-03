@@ -61,7 +61,7 @@ export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[],
       <div className="overflow-x-auto">
         <table className="w-full text-xs md:text-sm">
           <thead>
-            <tr className="border-b border-gray-800/20 bg-dark-surface-light/60 backdrop-blur-sm">
+            <tr className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
               <th className="text-left py-2.5 md:py-3 px-2 md:px-3 font-semibold text-gray-200 text-xs">
                 Baglet ID
               </th>
@@ -83,11 +83,13 @@ export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[],
             {recent.map((baglet) => (
               <tr
                 key={baglet.id}
-                className="border-b border-gray-800/10 hover:bg-dark-surface-light/15 transition-colors"
+                className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
-                <td className="py-3 md:py-3.5 px-2 md:px-3 text-accent-leaf font-medium text-xs md:text-sm">{baglet.id}</td>
+                <td className="py-3 md:py-3.5 px-2 md:px-3 text-accent-neon-green font-medium text-xs md:text-sm truncate max-w-[100px]" title={baglet.id}>
+                  {baglet.id}
+                </td>
                 <td className="py-3 md:py-3.5 px-2 md:px-3">
-                  <Link href={`/batches`} className="text-gray-400 hover:text-gray-300 text-xs md:text-sm">
+                  <Link href={`/batches`} className="text-gray-400 hover:text-gray-300 text-xs md:text-sm truncate max-w-[80px] block" title={baglet.batchId}>
                     {baglet.batchId}
                   </Link>
                 </td>
