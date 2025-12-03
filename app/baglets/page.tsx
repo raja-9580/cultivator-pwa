@@ -8,13 +8,16 @@ import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import { BagletStatus, Baglet } from '@/lib/types';
 import Link from 'next/link';
 
-const statusVariantMap: Record<BagletStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
-  [BagletStatus.Planned]: 'info',
-  [BagletStatus.Sterilized]: 'warning',
-  [BagletStatus.Inoculated]: 'warning',
-  [BagletStatus.Colonising]: 'warning',
-  [BagletStatus.ReadyToHarvest]: 'success',
-  [BagletStatus.Harvested]: 'neutral',
+const statusVariantMap: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
+  [BagletStatus.PLANNED]: 'info',
+  [BagletStatus.STERILIZED]: 'warning',
+  [BagletStatus.INOCULATED]: 'warning',
+  [BagletStatus.INCUBATED]: 'warning',
+  [BagletStatus.PINNED]: 'info',
+  [BagletStatus.HARVESTED]: 'success',
+  [BagletStatus.CONTAMINATED]: 'danger',
+  [BagletStatus.DISPOSED]: 'neutral',
+  [BagletStatus.DELETED]: 'neutral',
 };
 
 function formatDate(date: Date | string | null | undefined): string {
@@ -48,15 +51,15 @@ export default function BagletsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 md:mb-5">
-        <h1 className="text-xl md:text-2xl font-semibold text-accent-leaf">Baglets</h1>
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-100">Baglets</h1>
       </div>
 
       {/* Baglets Table */}
-      <Card className="border border-gray-800/30">
+      <Card className="glass-panel">
         <div className="overflow-x-auto">
           <table className="w-full text-xs md:text-sm">
             <thead>
-              <tr className="border-b border-gray-800/20 bg-dark-surface-light/60 backdrop-blur-sm">
+              <tr className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
                 <th className="text-left py-2.5 md:py-3 px-2 md:px-4 font-semibold text-gray-200 text-xs">
                   Baglet ID
                 </th>
@@ -81,11 +84,15 @@ export default function BagletsPage() {
               {baglets.map((baglet) => (
                 <tr
                   key={baglet.id}
-                  className="border-b border-gray-800/10 hover:bg-dark-surface-light/15 transition-colors"
+                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
                 >
-                  <td className="py-3 md:py-3.5 px-2 md:px-4 text-accent-leaf font-medium text-xs md:text-sm">{baglet.id}</td>
+                  <td className="py-3 md:py-3.5 px-2 md:px-4 text-accent-neon-green font-medium text-xs md:text-sm truncate max-w-[120px]" title={baglet.id}>
+                    <Link href={`/baglets/${baglet.id}`} className="hover:underline hover:text-accent-neon-blue transition-colors">
+                      {baglet.id}
+                    </Link>
+                  </td>
                   <td className="py-3 md:py-3.5 px-2 md:px-4">
-                    <Link href="/batches" className="text-gray-400 hover:text-accent-sky transition-colors text-xs md:text-sm">
+                    <Link href="/batches" className="text-gray-400 hover:text-gray-200 transition-colors text-xs md:text-sm truncate max-w-[100px] block" title={baglet.batchId}>
                       {baglet.batchId}
                     </Link>
                   </td>
@@ -108,7 +115,7 @@ export default function BagletsPage() {
                       : '—'}
                   </td>
                   <td className="py-2 md:py-3 px-2 md:px-4">
-                    <Button variant="ghost" size="sm" disabled className="text-xs md:text-sm px-1.5 md:px-2 py-0.5 md:py-1">
+                    <Button variant="ghost" size="sm" disabled className="text-xs md:text-sm px-1.5 md:px-2 py-0.5 md:py-1 hover:bg-white/10">
                       + Metric
                     </Button>
                   </td>

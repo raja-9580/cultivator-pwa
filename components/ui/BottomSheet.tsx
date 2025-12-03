@@ -38,7 +38,7 @@ export default function BottomSheet({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"
                     />
 
                     {/* Sheet */}
@@ -52,7 +52,7 @@ export default function BottomSheet({
                         dragElastic={0.2}
                         onDragEnd={onDragEnd}
                         className={cn(
-                            "fixed bottom-0 left-0 right-0 z-50 bg-dark-surface border-t border-gray-800 rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col",
+                            "fixed bottom-0 left-0 right-0 z-[60] bg-dark-surface border-t border-gray-800 rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col",
                             className
                         )}
                     >

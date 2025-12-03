@@ -6,13 +6,16 @@ import { Baglet, BagletStatus } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-const statusVariantMap: Record<BagletStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
-  [BagletStatus.Planned]: 'info',
-  [BagletStatus.Sterilized]: 'warning',
-  [BagletStatus.Inoculated]: 'warning',
-  [BagletStatus.Colonising]: 'warning',
-  [BagletStatus.ReadyToHarvest]: 'success',
-  [BagletStatus.Harvested]: 'neutral',
+const statusVariantMap: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
+  [BagletStatus.PLANNED]: 'info',
+  [BagletStatus.STERILIZED]: 'warning',
+  [BagletStatus.INOCULATED]: 'warning',
+  [BagletStatus.INCUBATED]: 'warning',
+  [BagletStatus.PINNED]: 'info',
+  [BagletStatus.HARVESTED]: 'success',
+  [BagletStatus.CONTAMINATED]: 'danger',
+  [BagletStatus.DISPOSED]: 'neutral',
+  [BagletStatus.DELETED]: 'neutral',
 };
 
 function formatDate(date: Date | string | null | undefined): string {
@@ -23,6 +26,14 @@ function formatDate(date: Date | string | null | undefined): string {
     month: '2-digit',
     day: '2-digit',
   });
+}
+
+function formatStatus(status: string): string {
+  if (!status) return '';
+  return status
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[], loading?: boolean }) {
@@ -86,7 +97,9 @@ export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[],
                 className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
                 <td className="py-3 md:py-3.5 px-2 md:px-3 text-accent-neon-green font-medium text-xs md:text-sm truncate max-w-[100px]" title={baglet.id}>
-                  {baglet.id}
+                  <Link href={`/baglets/${baglet.id}`} className="hover:underline hover:text-accent-neon-blue transition-colors">
+                    {baglet.id}
+                  </Link>
                 </td>
                 <td className="py-3 md:py-3.5 px-2 md:px-3">
                   <Link href={`/batches`} className="text-gray-400 hover:text-gray-300 text-xs md:text-sm truncate max-w-[80px] block" title={baglet.batchId}>
@@ -94,8 +107,8 @@ export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[],
                   </Link>
                 </td>
                 <td className="py-3 md:py-3.5 px-2 md:px-3">
-                  <Badge variant={statusVariantMap[baglet.status]}>
-                    {baglet.status}
+                  <Badge variant={statusVariantMap[baglet.status] || 'neutral'}>
+                    {formatStatus(baglet.status)}
                   </Badge>
                 </td>
                 <td className="py-3 md:py-3.5 px-2 md:px-3 text-gray-500 text-xs hidden md:table-cell">

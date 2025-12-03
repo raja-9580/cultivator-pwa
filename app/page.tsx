@@ -6,7 +6,7 @@ import RecentBatches from '@/components/dashboard/RecentBatches';
 import RecentBaglets from '@/components/dashboard/RecentBaglets';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import PullRefreshWrapper from '@/components/ui/PullRefreshWrapper';
-import { BatchStatus, Batch, Baglet } from '@/lib/types';
+import { Batch, Baglet } from '@/lib/types';
 
 export default function DashboardPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -42,17 +42,13 @@ export default function DashboardPage() {
   };
 
   // Calculate KPI stats
+  // Calculate KPI stats
   const totalBatches = batches.length;
-  const activeBatches = batches.filter(
-    (b) => ![BatchStatus.Archived, BatchStatus.ReadyToHarvest].includes(b.status)
-  ).length;
   const totalBaglets = baglets.length;
 
   const stats = [
     { label: 'Total Batches', value: totalBatches, icon: '🌾' },
-    { label: 'Active Batches', value: activeBatches, icon: '⚡' },
     { label: 'Total Baglets', value: totalBaglets, icon: '📦' },
-    { label: 'Ready to Harvest', value: batches.filter((b) => b.status === BatchStatus.ReadyToHarvest).length, icon: '🎯' },
   ];
 
   const fabActions = [

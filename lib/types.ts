@@ -1,22 +1,30 @@
-// Batch Status enum
-export enum BatchStatus {
-  Planned = 'Planned',
-  Sterilized = 'Sterilized',
-  Inoculated = 'Inoculated',
-  Colonising = 'Colonising',
-  InProgress = 'In Progress',
-  ReadyToHarvest = 'Ready to Harvest',
-  Archived = 'Archived',
-}
+
 
 // Baglet Status enum
+// Baglet Status enum
 export enum BagletStatus {
-  Planned = 'Planned',
-  Sterilized = 'Sterilized',
-  Inoculated = 'Inoculated',
-  Colonising = 'Colonising',
-  ReadyToHarvest = 'Ready to Harvest',
-  Harvested = 'Harvested',
+  NONE = 'NONE',
+  PLANNED = 'PLANNED',
+  PREPARED = 'PREPARED',
+  STERILIZED = 'STERILIZED',
+  INOCULATED = 'INOCULATED',
+  INCUBATED = 'INCUBATED',
+  PINNED = 'PINNED',
+  HARVESTED = 'HARVESTED',
+  REPINNED_1 = 'REPINNED_1',
+  REHARVESTED_1 = 'REHARVESTED_1',
+  REPINNED_2 = 'REPINNED_2',
+  REHARVESTED_2 = 'REHARVESTED_2',
+  REPINNED_3 = 'REPINNED_3',
+  REHARVESTED_3 = 'REHARVESTED_3',
+  REPINNED_4 = 'REPINNED_4',
+  REHARVESTED_4 = 'REHARVESTED_4',
+  CONTAMINATED = 'CONTAMINATED',
+  CRC_ANALYZED = 'CRC_ANALYZED',
+  DISPOSED = 'DISPOSED',
+  RECYCLED = 'RECYCLED',
+  DAMAGED = 'DAMAGED',
+  DELETED = 'DELETED',
 }
 
 // Mushroom types
@@ -39,10 +47,10 @@ export interface Batch {
   substrateDescription: string;
   plannedBagletCount: number;
   actualBagletCount: number;
-  status: BatchStatus;
   createdDate: Date;
   preparedDate: Date;
   notes?: string;
+  bagletStatusCounts?: Record<string, number>;
 }
 
 export interface Baglet {

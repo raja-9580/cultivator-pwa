@@ -1,19 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import { Batch, BatchStatus } from '@/lib/types';
 
-const statusVariantMap: Record<BatchStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
-    [BatchStatus.Planned]: 'info',
-    [BatchStatus.Sterilized]: 'warning',
-    [BatchStatus.Inoculated]: 'warning',
-    [BatchStatus.Colonising]: 'warning',
-    [BatchStatus.InProgress]: 'info',
-    [BatchStatus.ReadyToHarvest]: 'success',
-    [BatchStatus.Archived]: 'neutral',
-};
+import Button from '@/components/ui/Button';
+import { Batch } from '@/lib/types';
+
+
 
 function formatDate(date: Date | string | null | undefined): string {
     if (!date) return '—';
@@ -46,9 +38,7 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                     </Link>
                     <p className="text-gray-400 text-xs mt-0.5">{batch.mushroomType}</p>
                 </div>
-                <Badge variant={statusVariantMap[batch.status]} className="ml-2 flex-shrink-0">
-                    {batch.status}
-                </Badge>
+
             </div>
 
             {/* Metrics Grid */}
@@ -74,7 +64,7 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                     View Details
                 </Link>
 
-                {(batch.status === 'Planned' || batch.status === 'In Progress') && (
+                {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
                     <Button
                         variant="secondary"
                         size="sm"
@@ -86,7 +76,7 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                     </Button>
                 )}
 
-                {(batch.status === 'Sterilized' || batch.status === 'In Progress') && (
+                {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
                     <Button
                         variant="secondary"
                         size="sm"

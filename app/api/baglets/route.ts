@@ -11,13 +11,28 @@ export async function GET(request: Request) {
   const sql = neon(DATABASE_URL);
 
   try {
-    // Get batch_id from query params
+    // Get params
     const { searchParams } = new URL(request.url);
     const batchId = searchParams.get('batch_id');
+    const bagletId = searchParams.get('baglet_id');
 
     let bagletsData;
 
-    if (batchId) {
+    if (bagletId) {
+      // Filter by baglet_id
+      bagletsData = await sql`
+        SELECT
+          bg.baglet_id,
+          bg.batch_id,
+          bg.current_status,
+          bg.status_updated_at,
+          bg.latest_weight_g,
+          bg.latest_temp_c,
+          bg.latest_humidity_pct
+        FROM baglet bg
+        WHERE bg.baglet_id = ${bagletId}
+      `;
+    } else if (batchId) {
       // Filter by batch_id
       bagletsData = await sql`
         SELECT

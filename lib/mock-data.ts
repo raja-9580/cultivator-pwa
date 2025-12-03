@@ -1,4 +1,4 @@
-import { Batch, Baglet, BatchStatus, BagletStatus, Metric, HarvestEntry } from './types';
+import { Batch, Baglet, BagletStatus, Metric, HarvestEntry } from './types';
 
 // Mock Batches
 export const mockBatches: Batch[] = [
@@ -9,7 +9,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Straw & Gypsum Mix',
     plannedBagletCount: 50,
     actualBagletCount: 48,
-    status: BatchStatus.Colonising,
     createdDate: new Date('2025-09-24'),
     preparedDate: new Date('2025-09-24'),
     notes: 'Primary batch for Q3',
@@ -21,7 +20,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Oak Chips & Sawdust',
     plannedBagletCount: 35,
     actualBagletCount: 35,
-    status: BatchStatus.Inoculated,
     createdDate: new Date('2025-09-25'),
     preparedDate: new Date('2025-09-25'),
   },
@@ -32,7 +30,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Straw & Gypsum Mix',
     plannedBagletCount: 40,
     actualBagletCount: 40,
-    status: BatchStatus.ReadyToHarvest,
     createdDate: new Date('2025-09-26'),
     preparedDate: new Date('2025-09-26'),
   },
@@ -43,7 +40,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Oak Dowels',
     plannedBagletCount: 25,
     actualBagletCount: 25,
-    status: BatchStatus.Sterilized,
     createdDate: new Date('2025-09-27'),
     preparedDate: new Date('2025-09-27'),
   },
@@ -54,7 +50,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Oak Chips & Sawdust',
     plannedBagletCount: 30,
     actualBagletCount: 28,
-    status: BatchStatus.Planned,
     createdDate: new Date('2025-09-23'),
     preparedDate: new Date('2025-09-23'),
   },
@@ -65,7 +60,6 @@ export const mockBatches: Batch[] = [
     substrateDescription: 'Straw & Gypsum Mix',
     plannedBagletCount: 45,
     actualBagletCount: 43,
-    status: BatchStatus.Archived,
     createdDate: new Date('2025-09-22'),
     preparedDate: new Date('2025-09-22'),
   },
@@ -77,7 +71,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-24092025-B01-001',
     batchId: 'FPR-24092025-B01',
-    status: BagletStatus.Colonising,
+    status: BagletStatus.INCUBATED,
     lastStatusChange: new Date('2025-09-28'),
     metrics: {
       temperature: 23.5,
@@ -90,7 +84,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-24092025-B01-002',
     batchId: 'FPR-24092025-B01',
-    status: BagletStatus.Colonising,
+    status: BagletStatus.INCUBATED,
     lastStatusChange: new Date('2025-09-28'),
     metrics: {
       temperature: 23.8,
@@ -103,7 +97,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-24092025-B01-003',
     batchId: 'FPR-24092025-B01',
-    status: BagletStatus.Colonising,
+    status: BagletStatus.INCUBATED,
     lastStatusChange: new Date('2025-09-27'),
     metrics: {
       temperature: 23.2,
@@ -117,7 +111,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-25092025-B02-001',
     batchId: 'FPR-25092025-B02',
-    status: BagletStatus.Inoculated,
+    status: BagletStatus.INOCULATED,
     lastStatusChange: new Date('2025-09-26'),
     metrics: {
       temperature: 22.5,
@@ -130,7 +124,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-25092025-B02-002',
     batchId: 'FPR-25092025-B02',
-    status: BagletStatus.Inoculated,
+    status: BagletStatus.INOCULATED,
     lastStatusChange: new Date('2025-09-26'),
     metrics: {
       temperature: 22.8,
@@ -144,7 +138,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-26092025-B03-001',
     batchId: 'FPR-26092025-B03',
-    status: BagletStatus.ReadyToHarvest,
+    status: BagletStatus.PINNED,
     lastStatusChange: new Date('2025-09-29'),
     metrics: {
       temperature: 18.5,
@@ -158,7 +152,7 @@ export const mockBaglets: Baglet[] = [
   {
     id: 'BGL-FPR-27092025-B04-001',
     batchId: 'FPR-27092025-B04',
-    status: BagletStatus.Sterilized,
+    status: BagletStatus.STERILIZED,
     lastStatusChange: new Date('2025-09-27'),
   },
 ];

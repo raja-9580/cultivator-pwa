@@ -47,6 +47,7 @@ export default function BottomNav() {
         { href: '/baglets', label: '🏷️ Baglets', active: pathname === '/baglets' },
         { href: '/harvest', label: '🌿 Harvest', active: pathname === '/harvest' },
         { href: '/reports', label: '📈 Reports', active: pathname === '/reports' },
+        { href: '/profile', label: '👤 Profile', active: pathname === '/profile' },
     ];
 
     return (
@@ -139,12 +140,7 @@ export default function BottomNav() {
             <div className="md:hidden h-20" />
 
             {/* Signature - Mobile only, below bottom nav */}
-            <div className="md:hidden fixed bottom-16 left-0 right-0 bg-dark-surface/60 backdrop-blur-sm border-t border-gray-800/20 py-1.5 z-35 text-center">
-                <p className="text-[9px] text-gray-500">
-                    Engineered by{' '}
-                    <span className="text-accent-leaf font-semibold">Raja Selvaraj</span>
-                </p>
-            </div>
+
         </>
     );
 }

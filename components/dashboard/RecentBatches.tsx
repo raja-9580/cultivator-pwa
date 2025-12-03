@@ -1,20 +1,11 @@
 'use client';
 
 import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
-import { Batch, BatchStatus } from '@/lib/types';
+import { Batch } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-const statusVariantMap: Record<BatchStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
-  [BatchStatus.Planned]: 'info',
-  [BatchStatus.Sterilized]: 'warning',
-  [BatchStatus.Inoculated]: 'warning',
-  [BatchStatus.Colonising]: 'warning',
-  [BatchStatus.InProgress]: 'info',
-  [BatchStatus.ReadyToHarvest]: 'success',
-  [BatchStatus.Archived]: 'neutral',
-};
+
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '—';
@@ -72,9 +63,7 @@ export default function RecentBatches({ batches, loading }: { batches: Batch[], 
               <th className="text-left py-2.5 md:py-3 px-2 md:px-3 font-semibold text-gray-200 text-xs hidden md:table-cell">
                 Baglets
               </th>
-              <th className="text-left py-2.5 md:py-3 px-2 md:px-3 font-semibold text-gray-200 text-xs">
-                Status
-              </th>
+
               <th className="text-left py-2.5 md:py-3 px-2 md:px-3 font-semibold text-gray-200 text-xs hidden md:table-cell">
                 Created
               </th>
@@ -95,11 +84,7 @@ export default function RecentBatches({ batches, loading }: { batches: Batch[], 
                 <td className="py-3 md:py-3.5 px-2 md:px-3 text-gray-400 text-xs md:text-sm font-medium hidden md:table-cell">
                   {batch.actualBagletCount} / {batch.plannedBagletCount}
                 </td>
-                <td className="py-3 md:py-3.5 px-2 md:px-3">
-                  <Badge variant={statusVariantMap[batch.status]}>
-                    {batch.status}
-                  </Badge>
-                </td>
+
                 <td className="py-3 md:py-3.5 px-2 md:px-3 text-gray-500 text-xs md:text-sm hidden md:table-cell">
                   {formatDate(batch.createdDate)}
                 </td>
