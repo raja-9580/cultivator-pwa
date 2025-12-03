@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
+import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
 
 interface BatchDetails {
     batch: {
@@ -70,6 +71,7 @@ export default function BatchDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [showMetricsWizard, setShowMetricsWizard] = useState(false);
 
     async function fetchBatchDetails() {
         try {
@@ -102,8 +104,17 @@ export default function BatchDetailPage() {
     async function handleStatusUpdate(action: 'sterilize' | 'inoculate') {
         if (!batchDetails) return;
 
-        const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-        const currentStatus = action === 'sterilize' ? 'PLANNED' : 'STERILIZED';
+        let actionName = '';
+        let currentStatus = '';
+
+        if (action === 'sterilize') {
+            actionName = 'STERILIZED';
+            currentStatus = 'PLANNED';
+        } else if (action === 'inoculate') {
+            actionName = 'INOCULATED';
+            currentStatus = 'STERILIZED';
+        }
+
         const count = batchDetails.batch?.bagletStatusCounts?.[currentStatus] ?? 0;
 
         if (count === 0) {
@@ -219,7 +230,7 @@ export default function BatchDetailPage() {
                             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none"
                         >
                             <span className="text-lg">🔥</span>
-                            <span>{updatingStatus ? 'Updating...' : `Flag Sterilized (${batch.bagletStatusCounts['PLANNED']})`}</span>
+                            <span>{updatingStatus ? 'Updating...' : `Mark Sterilized (${batch.bagletStatusCounts['PLANNED']})`}</span>
                         </Button>
                     )}
 
@@ -233,11 +244,40 @@ export default function BatchDetailPage() {
                             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none"
                         >
                             <span className="text-lg">💉</span>
-                            <span>{updatingStatus ? 'Updating...' : `Flag Inoculated (${batch.bagletStatusCounts['STERILIZED']})`}</span>
+                            <span>{updatingStatus ? 'Updating...' : `Mark Inoculated (${batch.bagletStatusCounts['STERILIZED']})`}</span>
                         </Button>
                     )}
+
+
+
+                    {/* Rapid Metrics Update - Show if at least one baglet is STERILIZED (or later) */}
+                    {/* User requested: "enable if atleast one baglet in sterilized state" */}
+                    {((batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 ||
+                        (batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 ||
+                        (batch.bagletStatusCounts?.['INCUBATED'] ?? 0) > 0) && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setShowMetricsWizard(true)}
+                                className="flex items-center gap-2"
+                            >
+                                <span className="text-lg">📊</span>
+                                <span>Log Metrics</span>
+                            </Button>
+                        )}
                 </div>
             </div>
+
+            {/* Metrics Wizard */}
+            <BatchMetricsWizard
+                isOpen={showMetricsWizard}
+                onClose={() => setShowMetricsWizard(false)}
+                baglets={baglets}
+                onUpdate={() => {
+                    fetchBatchDetails();
+                    router.refresh();
+                }}
+            />
 
             {/* Batch Summary */}
             <Card className="border border-gray-800/30">

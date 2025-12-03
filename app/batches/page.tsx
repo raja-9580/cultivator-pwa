@@ -8,6 +8,7 @@ import Select from '@/components/ui/Select';
 
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import CreateBatchModal from '@/components/batches/CreateBatchModal';
+import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
 import { MUSHROOM_TYPES, Batch } from '@/lib/types';
@@ -37,7 +38,27 @@ export default function BatchesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [updatingBatch, setUpdatingBatch] = useState<string | null>(null);
+  const [showMetricsWizard, setShowMetricsWizard] = useState(false);
+  const [wizardBaglets, setWizardBaglets] = useState<any[]>([]);
   const router = useRouter();
+
+  async function handleLogMetrics(batchId: string) {
+    try {
+      // Fetch baglets for this batch
+      const res = await fetch(`/api/baglets?batch_id=${batchId}`);
+      const data = await res.json();
+
+      if (data.baglets && data.baglets.length > 0) {
+        setWizardBaglets(data.baglets);
+        setShowMetricsWizard(true);
+      } else {
+        alert('No baglets found for this batch');
+      }
+    } catch (error) {
+      console.error('Failed to fetch baglets:', error);
+      alert('Failed to load baglets for metrics');
+    }
+  }
 
   async function fetchBatches() {
     try {
@@ -253,7 +274,7 @@ export default function BatchesPage() {
                           onClick={() => handleStatusUpdate(batch.id, 'sterilize')}
                           disabled={updatingBatch === batch.id}
                         >
-                          {updatingBatch === batch.id ? '...' : '🔥 Sterilized'}
+                          {updatingBatch === batch.id ? '...' : '🔥 Mark Sterilized'}
                         </Button>
                       )}
 
@@ -266,9 +287,23 @@ export default function BatchesPage() {
                           onClick={() => handleStatusUpdate(batch.id, 'inoculate')}
                           disabled={updatingBatch === batch.id}
                         >
-                          {updatingBatch === batch.id ? '...' : '💉 Inoculated'}
+                          {updatingBatch === batch.id ? '...' : '💉 Mark Inoculated'}
                         </Button>
                       )}
+
+                      {/* Log Metrics - Show if at least one baglet is STERILIZED or later */}
+                      {((batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 ||
+                        (batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 ||
+                        (batch.bagletStatusCounts?.['INCUBATED'] ?? 0) > 0) && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5"
+                            onClick={() => handleLogMetrics(batch.id)}
+                          >
+                            📊 Log Metrics
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -282,6 +317,13 @@ export default function BatchesPage() {
           </div>
         )}
       </Card>
+
+      <BatchMetricsWizard
+        isOpen={showMetricsWizard}
+        onClose={() => setShowMetricsWizard(false)}
+        baglets={wizardBaglets}
+        onUpdate={fetchBatches}
+      />
 
       <CreateBatchModal
         isOpen={isCreateModalOpen}
