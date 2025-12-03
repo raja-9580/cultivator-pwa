@@ -5,23 +5,15 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import Badge from '@/components/ui/Badge';
+
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import CreateBatchModal from '@/components/batches/CreateBatchModal';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
-import { MUSHROOM_TYPES, BatchStatus, Batch } from '@/lib/types';
+import { MUSHROOM_TYPES, Batch } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
-const statusVariantMap: Record<BatchStatus, 'success' | 'warning' | 'info' | 'danger' | 'neutral'> = {
-  [BatchStatus.Planned]: 'info',
-  [BatchStatus.Sterilized]: 'warning',
-  [BatchStatus.Inoculated]: 'warning',
-  [BatchStatus.Colonising]: 'warning',
-  [BatchStatus.InProgress]: 'info',
-  [BatchStatus.ReadyToHarvest]: 'success',
-  [BatchStatus.Archived]: 'neutral',
-};
+
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '—';
@@ -37,7 +29,7 @@ export default function BatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [filters, setFilters] = useState({
     mushroomType: '',
-    status: '',
+
     dateFrom: '',
     dateTo: '',
   });
@@ -61,11 +53,20 @@ export default function BatchesPage() {
 
   async function handleStatusUpdate(batchId: string, action: 'sterilize' | 'inoculate') {
     const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-    const currentStatus = action === 'sterilize' ? 'Planned' : 'Sterilized';
+    const currentStatus = action === 'sterilize' ? 'PLANNED' : 'STERILIZED';
+
+    // Find the batch to get the count
+    const batch = batches.find(b => b.id === batchId);
+    const count = batch?.bagletStatusCounts?.[currentStatus] ?? 0;
+
+    if (count === 0) {
+      alert(`No baglets found in ${currentStatus} status`);
+      return;
+    }
 
     // Show confirmation dialog
     const confirmed = window.confirm(
-      `Do you want to update the status of all baglets in "${currentStatus}" state in Batch "${batchId}" to "${actionName}"?`
+      `Do you want to update the status of all ${count} baglets in Batch "${batchId}" to '${actionName}'?`
     );
 
     if (!confirmed) return;
@@ -111,9 +112,6 @@ export default function BatchesPage() {
     if (filters.mushroomType && batch.mushroomType !== filters.mushroomType) {
       return false;
     }
-    if (filters.status && batch.status !== filters.status) {
-      return false;
-    }
     return true;
   });
 
@@ -153,18 +151,7 @@ export default function BatchesPage() {
               setFilters({ ...filters, mushroomType: e.target.value })
             }
           />
-          <Select
-            label="Status"
-            options={[
-              { value: '', label: 'All Statuses' },
-              ...Object.values(BatchStatus).map((status) => ({
-                value: status,
-                label: status,
-              })),
-            ]}
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          />
+
           <Input
             label="From Date"
             type="date"
@@ -217,9 +204,7 @@ export default function BatchesPage() {
                 <th className="text-left py-2.5 md:py-3 px-2 md:px-4 font-semibold text-gray-200 text-xs hidden lg:table-cell">
                   Baglets
                 </th>
-                <th className="text-left py-2.5 md:py-3 px-2 md:px-4 font-semibold text-gray-200 text-xs">
-                  Status
-                </th>
+
                 <th className="text-left py-2.5 md:py-3 px-2 md:px-4 font-semibold text-gray-200 text-xs hidden md:table-cell">
                   Created
                 </th>
@@ -246,11 +231,7 @@ export default function BatchesPage() {
                   <td className="py-3 md:py-3.5 px-2 md:px-4 text-gray-400 text-xs md:text-sm font-medium hidden lg:table-cell">
                     {batch.actualBagletCount} / {batch.plannedBagletCount}
                   </td>
-                  <td className="py-3 md:py-3.5 px-2 md:px-4">
-                    <Badge variant={statusVariantMap[batch.status]}>
-                      {batch.status}
-                    </Badge>
-                  </td>
+
                   <td className="py-3 md:py-3.5 px-2 md:px-4 text-gray-500 text-xs md:text-sm hidden md:table-cell">
                     {formatDate(batch.createdDate)}
                   </td>
@@ -263,8 +244,8 @@ export default function BatchesPage() {
                         Details
                       </a>
 
-                      {/* Flag Sterilized - Show if status is Planned or In Progress */}
-                      {(batch.status === 'Planned' || batch.status === 'In Progress') && (
+                      {/* Flag Sterilized - Show if at least one baglet is PLANNED */}
+                      {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -276,8 +257,8 @@ export default function BatchesPage() {
                         </Button>
                       )}
 
-                      {/* Flag Inoculated - Show if status is Sterilized or In Progress */}
-                      {(batch.status === 'Sterilized' || batch.status === 'In Progress') && (
+                      {/* Flag Inoculated - Show if at least one baglet is STERILIZED */}
+                      {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
                         <Button
                           variant="secondary"
                           size="sm"

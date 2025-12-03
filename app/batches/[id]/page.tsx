@@ -1,256 +1,373 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import QRLabelGrid from '@/components/batches/QRLabelGrid';
-import { Batch } from '@/lib/types';
-import Link from 'next/link';
+import SubstrateMix from '@/components/batches/SubstrateMix';
+import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
+import BagletsList from '@/components/batches/BagletsList';
 
-function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return '—';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+interface BatchDetails {
+    batch: {
+        id: string;
+        farmId: string;
+        farmName: string;
+        preparedDate: string;
+        sequence: number;
+        mushroomType: string;
+        mushroomId: string;
+        strain: {
+            code: string;
+            vendorId: string;
+            vendorName: string;
+        };
+        substrate: {
+            id: string;
+            name: string;
+            mediums: any[];
+            supplements: any[];
+            mediumsForBatch: any[];
+            supplementsForBatch: any[];
+        };
+        plannedBagletCount: number;
+        actualBagletCount: number;
+        bagletStatusCounts: Record<string, number>;
+        createdBy: string;
+        createdAt: string;
+    };
+    baglets: any[];
 }
 
-interface RecipeItem {
-  name: string;
-  qty: number;
-  unit: string;
+function formatDate(dateString: string): string {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
 }
 
-interface BatchWithRecipe extends Batch {
-  recipe?: {
-    mediums: { medium_name: string; qty_g: number }[];
-    supplements: { supplement_name: string; qty: number; unit: string }[];
-  };
-  statusBreakdown?: { status: string; count: number }[];
+function formatDateTime(dateString: string): string {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
-export default function BatchDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  console.log('BatchDetailPage mounted with params:', params);
-  const [batch, setBatch] = useState<BatchWithRecipe | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+export default function BatchDetailPage() {
+    const params = useParams();
+    const router = useRouter();
+    const batchId = params.id as string;
 
-  useEffect(() => {
-    fetchBatch();
-  }, [params.id]);
+    const [batchDetails, setBatchDetails] = useState<BatchDetails | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  async function fetchBatch() {
-    try {
-      const res = await fetch(`/api/batches/${params.id}`);
-      if (!res.ok) throw new Error('Failed to fetch batch');
-      const data = await res.json();
-      setBatch(data.batch || null);
-    } catch (error) {
-      console.error('Failed to fetch batch:', error);
-    } finally {
-      setLoading(false);
+    async function fetchBatchDetails() {
+        try {
+            setLoading(true);
+            // Add timestamp to force fresh fetch
+            const res = await fetch(`/api/batches/${batchId}?t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: {
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!res.ok) {
+                if (res.status === 404) {
+                    throw new Error('Batch not found');
+                }
+                throw new Error('Failed to fetch batch details');
+            }
+
+            const data = await res.json();
+            setBatchDetails(data);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     }
-  }
 
-  async function handleStatusUpdate(action: 'sterilize' | 'inoculate') {
-    if (!batch) return;
+    async function handleStatusUpdate(action: 'sterilize' | 'inoculate') {
+        if (!batchDetails) return;
 
-    const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-    const currentStatus = action === 'sterilize' ? 'Planned' : 'Sterilized';
+        const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
+        const currentStatus = action === 'sterilize' ? 'PLANNED' : 'STERILIZED';
+        const count = batchDetails.batch?.bagletStatusCounts?.[currentStatus] ?? 0;
 
-    const confirmed = window.confirm(
-      `Do you want to update the status of all baglets in "${currentStatus}" state in Batch "${batch.id}" to "${actionName}"?`
-    );
+        if (count === 0) {
+            alert(`No baglets found in ${currentStatus} status`);
+            return;
+        }
 
-    if (!confirmed) return;
+        const confirmed = window.confirm(
+            `Do you want to update the status of all ${count} baglets in Batch "${batchId}" to '${actionName}'?`
+        );
 
-    setUpdatingStatus(true);
-    try {
-      const res = await fetch(`/api/batches/${batch.id}/update-status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          updated_by: 'user@example.com',
-        }),
-      });
+        if (!confirmed) return;
 
-      const data = await res.json();
+        setUpdatingStatus(true);
+        try {
+            const res = await fetch(`/api/batches/${batchId}/update-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action,
+                    updated_by: 'user@example.com', // TODO: Get from auth session
+                }),
+            });
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to update status');
-      }
+            const data = await res.json();
 
-      alert(`✅ Updated ${data.updated_count} baglets to ${data.to_status}`);
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to update status');
+            }
 
-      // Refresh data
-      await fetchBatch();
-    } catch (error: any) {
-      alert(`❌ Error: ${error.message}`);
-    } finally {
-      setUpdatingStatus(false);
+            alert(`✅ Updated ${data.updated_count} baglets to ${data.to_status}`);
+
+            // Force a complete refresh of the page data
+            setLoading(true);
+            await fetchBatchDetails();
+            router.refresh(); // Force Next.js to refresh the route
+            setLoading(false);
+        } catch (error: any) {
+            alert(`❌ Error: ${error.message}`);
+        } finally {
+            setUpdatingStatus(false);
+        }
     }
-  }
 
-  if (loading) {
-    return <div className="p-8 text-center text-gray-400">Loading batch details...</div>;
-  }
+    useEffect(() => {
+        if (batchId) {
+            fetchBatchDetails();
+        }
+    }, [batchId]);
 
-  if (!batch) {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-leaf mb-4"></div>
+                    <p className="text-gray-400">Loading batch details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="max-w-md w-full border border-red-800/30">
+                    <div className="p-6 text-center">
+                        <div className="text-4xl mb-4">❌</div>
+                        <h2 className="text-xl font-semibold text-red-400 mb-2">Error</h2>
+                        <p className="text-gray-400 mb-4">{error}</p>
+                        <Button onClick={() => router.push('/batches')} variant="secondary">
+                            Back to Batches
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!batchDetails) {
+        return null;
+    }
+
+    const { batch, baglets } = batchDetails;
+
     return (
-      <div>
-        <h1 className="text-3xl font-bold text-gray-100 mb-6">Batch Not Found</h1>
-        <Link href="/batches">
-          <Button variant="primary">← Back to Batches</Button>
-        </Link>
-      </div>
-    );
-  }
+        <div className="space-y-5">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => router.push('/batches')}
+                        className="flex items-center gap-2"
+                    >
+                        <span>←</span>
+                        <span className="hidden sm:inline">Back</span>
+                    </Button>
+                    <h1 className="text-2xl md:text-3xl font-bold text-accent-leaf">
+                        {batch.id}
+                    </h1>
+                </div>
 
-  // Calculate Recipe Totals
-  const BAG_WEIGHT_KG = 2;
-  const totalMixWeightKg = batch.plannedBagletCount * BAG_WEIGHT_KG;
+                {/* Bulk Actions in Header */}
+                <div className="flex flex-wrap gap-2">
+                    {/* Flag Sterilized - Show if at least one baglet is PLANNED */}
+                    {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleStatusUpdate('sterilize')}
+                            disabled={updatingStatus}
+                            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none"
+                        >
+                            <span className="text-lg">🔥</span>
+                            <span>{updatingStatus ? 'Updating...' : `Flag Sterilized (${batch.bagletStatusCounts['PLANNED']})`}</span>
+                        </Button>
+                    )}
 
-  const recipeItems: RecipeItem[] = [];
-
-  if (batch.recipe) {
-    batch.recipe.mediums.forEach((m) => {
-      recipeItems.push({
-        name: m.medium_name,
-        qty: m.qty_g * totalMixWeightKg,
-        unit: 'g',
-      });
-    });
-    batch.recipe.supplements.forEach((s) => {
-      recipeItems.push({
-        name: s.supplement_name,
-        qty: s.qty * totalMixWeightKg,
-        unit: s.unit || 'g',
-      });
-    });
-  }
-
-  return (
-    <div>
-      <div className="mb-6">
-        <Link href="/batches">
-          <Button variant="ghost" size="sm">
-            ← Back to Batches
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-leaf to-accent-sky bg-clip-text text-transparent mt-4">🌾 {batch.id}</h1>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card variant="default">
-          <p className="text-xs text-gray-400 mb-1">Mushroom Type</p>
-          <p className="text-xl font-semibold text-accent-leaf">
-            {batch.mushroomType}
-          </p>
-        </Card>
-        <Card variant="default">
-          <p className="text-xs text-gray-400 mb-1">Baglets</p>
-          <p className="text-xl font-semibold text-accent-leaf">
-            {batch.actualBagletCount} / {batch.plannedBagletCount}
-          </p>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card variant="default">
-          <p className="text-sm font-semibold text-gray-300 mb-3">Details</p>
-          <div className="space-y-2 text-sm">
-            <div>
-              <p className="text-gray-400">Substrate Code:</p>
-              <p className="text-gray-200">{batch.substrateCode}</p>
+                    {/* Flag Inoculated - Show if at least one baglet is STERILIZED */}
+                    {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleStatusUpdate('inoculate')}
+                            disabled={updatingStatus}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none"
+                        >
+                            <span className="text-lg">💉</span>
+                            <span>{updatingStatus ? 'Updating...' : `Flag Inoculated (${batch.bagletStatusCounts['STERILIZED']})`}</span>
+                        </Button>
+                    )}
+                </div>
             </div>
-            <div>
-              <p className="text-gray-400">Substrate Description:</p>
-              <p className="text-gray-200">{batch.substrateDescription}</p>
-            </div>
-            <div>
-              <p className="text-gray-400">Created Date:</p>
-              <p className="text-gray-200">
-                {formatDate(batch.createdDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400">Prepared Date:</p>
-              <p className="text-gray-200">
-                {formatDate(batch.preparedDate)}
-              </p>
-            </div>
-            {batch.notes && (
-              <div>
-                <p className="text-gray-400">Notes:</p>
-                <p className="text-gray-200">{batch.notes}</p>
-              </div>
-            )}
-          </div>
-        </Card>
 
-        <div className="space-y-6">
-          {/* Recipe Section - Only visible if Planned */}
-          {batch.status === 'Planned' && recipeItems.length > 0 && (
-            <Card variant="default">
-              <p className="text-sm font-semibold text-gray-300 mb-3">
-                Recipe (Total for {batch.plannedBagletCount} bags @ {BAG_WEIGHT_KG}kg)
-              </p>
-              <div className="space-y-2 text-sm">
-                {recipeItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between border-b border-gray-800 pb-1 last:border-0">
-                    <span className="text-gray-400">{item.name}</span>
-                    <span className="text-accent-sky font-mono">
-                      {item.qty.toLocaleString()} {item.unit}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            {/* Batch Summary */}
+            <Card className="border border-gray-800/30">
+                <div className="p-4 md:p-5">
+                    <h2 className="text-lg md:text-xl font-semibold text-accent-leaf mb-4">
+                        Batch Information
+                    </h2>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Mushroom Type
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {batch.mushroomType}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Strain
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {batch.strain.code}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                                {batch.strain.vendorName}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Farm
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {batch.farmName || batch.farmId}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Prepared Date
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {formatDate(batch.preparedDate)}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Batch Sequence
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                #{batch.sequence}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Created
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {formatDateTime(batch.createdAt)}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                                by {batch.createdBy}
+                            </div>
+                        </div>
+
+                        <div className="sm:col-span-2 lg:col-span-1">
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Baglet Count
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                <span className="text-accent-leaf">{batch.actualBagletCount}</span>
+                                <span className="text-gray-500 mx-1">/</span>
+                                <span className="text-gray-400">{batch.plannedBagletCount}</span>
+                                <span className="text-xs text-gray-500 ml-2">
+                                    ({((batch.actualBagletCount / batch.plannedBagletCount) * 100).toFixed(0)}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </Card>
-          )}
 
-          <Card variant="default">
-            <p className="text-sm font-semibold text-gray-300 mb-3">Actions</p>
-            <div className="space-y-2">
-              {/* Flag Sterilized - Show if any baglet is Planned */}
-              {batch.statusBreakdown?.some(s => s.status === 'Planned') && (
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => handleStatusUpdate('sterilize')}
-                  disabled={updatingStatus}
-                >
-                  {updatingStatus ? 'Updating...' : '🔥 Flag as Sterilized'}
-                </Button>
-              )}
+            {/* Status Distribution and Substrate Mix */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <BagletStatusDistribution
+                    statusCounts={batch.bagletStatusCounts}
+                    totalBaglets={batch.actualBagletCount}
+                />
 
-              {/* Flag Inoculated - Show if any baglet is Sterilized */}
-              {batch.statusBreakdown?.some(s => s.status === 'Sterilized') && (
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => handleStatusUpdate('inoculate')}
-                  disabled={updatingStatus}
-                >
-                  {updatingStatus ? 'Updating...' : '💉 Flag as Inoculated'}
-                </Button>
-              )}
-
-              <Button variant="secondary" className="w-full">
-                🔗 View All Baglets
-              </Button>
+                <SubstrateMix
+                    substrateName={batch.substrate.name}
+                    mediums={batch.substrate.mediums}
+                    supplements={batch.substrate.supplements}
+                    mediumsForBatch={batch.substrate.mediumsForBatch}
+                    supplementsForBatch={batch.substrate.supplementsForBatch}
+                    bagletCount={batch.plannedBagletCount}
+                />
             </div>
-          </Card>
-        </div>
-      </div>
 
-      <QRLabelGrid batchId={batch.id} />
-    </div>
-  );
+            {/* Baglets List */}
+            <BagletsList baglets={baglets} />
+
+            {/* Action Buttons */}
+            <Card className="border border-gray-800/30">
+                <div className="p-4 md:p-5">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-3">
+                        Quick Actions
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => router.push(`/baglets?batch=${batch.id}`)}
+                        >
+                            View All Baglets
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => router.push('/batches')}
+                        >
+                            Back to Batches
+                        </Button>
+                    </div>
+                </div>
+            </Card>
+        </div>
+    );
 }
