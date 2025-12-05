@@ -3,6 +3,8 @@
 
 import Logo from '@/components/ui/Logo';
 
+import { APP_CONFIG } from '@/lib/app-config';
+
 export default function Topbar() {
 
 
@@ -14,8 +16,8 @@ export default function Topbar() {
         <div className="flex items-center gap-3 md:hidden">
           <Logo className="w-8 h-8 text-accent-neon-green" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white tracking-wide leading-none">Akaththi Farms</span>
-            <span className="text-[10px] text-accent-neon-green/80 tracking-wider uppercase leading-none mt-0.5">Cultivator</span>
+            <span className="text-sm font-bold text-white tracking-wide leading-none">{APP_CONFIG.company}</span>
+            <span className="text-[10px] text-accent-neon-green/80 tracking-wider leading-none mt-0.5">{APP_CONFIG.name}</span>
           </div>
         </div>
 
