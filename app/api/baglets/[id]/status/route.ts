@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { BagletStatus } from '@/lib/types';
 import { validateTransition } from '@/lib/baglet-workflow';
+import { updateBagletStatusWithLog } from '@/lib/baglet-actions';
 
 export async function POST(
     request: Request,
@@ -24,9 +25,9 @@ export async function POST(
             return NextResponse.json({ error: 'New status is required' }, { status: 400 });
         }
 
-        // 1. Fetch current status
+        // 1. Fetch current status and batch_id (needed for logging)
         const currentData = await sql`
-      SELECT current_status 
+      SELECT current_status, batch_id 
       FROM baglet 
       WHERE baglet_id = ${bagletId}
     `;
@@ -36,6 +37,7 @@ export async function POST(
         }
 
         const currentStatus = currentData[0].current_status as BagletStatus;
+        const batchId = currentData[0].batch_id;
 
         // 2. Validate Transition
         const isValid = validateTransition(currentStatus, newStatus as BagletStatus);
@@ -48,20 +50,15 @@ export async function POST(
             }, { status: 400 });
         }
 
-        // 3. Update Status in Database
-        // We update the baglet table AND insert a log entry (if you have a history table, otherwise just update)
-        // Assuming a simple update for now, but ideally we should log this.
-
-        await sql`
-      UPDATE baglet
-      SET 
-        current_status = ${newStatus},
-        status_updated_at = NOW()
-      WHERE baglet_id = ${bagletId}
-    `;
-
-        // TODO: Insert into status_log table if it exists
-        // await sql`INSERT INTO status_log ...`
+        // 3. Update Status in Database & Log (Using Reusable Action)
+        await updateBagletStatusWithLog(sql, {
+            bagletId,
+            batchId,
+            currentStatus,
+            newStatus: newStatus as BagletStatus,
+            notes: body.notes,
+            user: 'user' // TODO: Replace with actual user
+        });
 
         console.log(`✅ Updated baglet ${bagletId} status: ${currentStatus} -> ${newStatus}`);
 

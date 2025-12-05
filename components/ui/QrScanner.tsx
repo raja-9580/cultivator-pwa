@@ -9,9 +9,11 @@ interface QrScannerProps {
     isOpen: boolean;
     onClose: () => void;
     onScan: (decodedText: string) => void;
+    continuous?: boolean;
+    children?: React.ReactNode;
 }
 
-export default function QrScanner({ isOpen, onClose, onScan }: QrScannerProps) {
+export default function QrScanner({ isOpen, onClose, onScan, continuous = false, children }: QrScannerProps) {
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [torchEnabled, setTorchEnabled] = useState(false);
     const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -51,7 +53,9 @@ export default function QrScanner({ isOpen, onClose, onScan }: QrScannerProps) {
                     },
                     (decodedText: string) => {
                         onScan(decodedText);
-                        stopScanner();
+                        if (!continuous) {
+                            stopScanner();
+                        }
                     },
                     (_: any) => {
                         // ignore
@@ -118,6 +122,11 @@ export default function QrScanner({ isOpen, onClose, onScan }: QrScannerProps) {
                                 <p className="text-white">Camera access denied or unavailable.</p>
                             </div>
                         )}
+
+                        {/* Custom Overlay Content */}
+                        <div className="absolute inset-0 z-30 pointer-events-none">
+                            {children}
+                        </div>
                     </div>
 
                     {/* Controls */}

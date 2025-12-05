@@ -4,6 +4,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import BottomNav from '@/components/layout/BottomNav';
 import InstallPWA from '@/components/InstallPWA';
+import { Toaster } from 'sonner';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -58,6 +59,7 @@ export default function RootLayout({
         </main>
         <BottomNav />
         <InstallPWA />
+        <Toaster position="top-center" theme="dark" />
       </body>
     </html>
   );
