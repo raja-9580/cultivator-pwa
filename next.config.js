@@ -42,8 +42,7 @@ const withPWA = require('next-pwa')({
   ],
 });
 
-/** @type {import('next').NextConfig} */
-// Force rebuild
+// Force rebuild 2025-12-06 v2
 const nextConfig = {
   reactStrictMode: true,
 }

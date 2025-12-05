@@ -26,7 +26,7 @@ export async function GET() {
       ORDER BY substrate_name
     `;
 
-        console.log(`✅ Fetched ${substratesData.length} substrates from v_substrate_full`);
+
 
         return NextResponse.json({ substrates: substratesData });
 

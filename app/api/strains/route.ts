@@ -26,7 +26,7 @@ export async function GET() {
       ORDER BY mushroom_name, strain_code
     `;
 
-        console.log(`✅ Fetched ${strainsData.length} strains from v_strain_full`);
+
 
         return NextResponse.json({ strains: strainsData });
 
