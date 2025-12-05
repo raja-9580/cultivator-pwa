@@ -265,6 +265,37 @@ export default function BatchesPage() {
                         Details
                       </a>
 
+
+                      {/* Add Baglet - Initial Stage */}
+                      {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
+                          onClick={() => {
+                            if (window.confirm(`Add extra baglet to ${batch.id}?`)) {
+                              setUpdatingBatch(batch.id);
+                              fetch(`/api/batches/${batch.id}/add-baglet`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ user: 'system' })
+                              })
+                                .then(res => res.json())
+                                .then(data => {
+                                  if (data.error) throw new Error(data.error);
+                                  alert(`✅ ${data.message}`);
+                                  fetchBatches();
+                                })
+                                .catch(e => alert(`❌ ${e.message}`))
+                                .finally(() => setUpdatingBatch(null));
+                            }
+                          }}
+                          disabled={updatingBatch === batch.id}
+                        >
+                          {updatingBatch === batch.id ? '...' : '+ Add'}
+                        </Button>
+                      )}
+
                       {/* Flag Sterilized - Show if at least one baglet is PLANNED */}
                       {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
                         <Button

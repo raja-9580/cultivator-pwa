@@ -250,6 +250,48 @@ export default function BatchDetailPage() {
 
 
 
+
+                    {/* Add Extra Baglet - Manual Override for Surplus Material */}
+                    {/* "display when all baglet is prepared stat" (PLANNED) */}
+                    {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                                const confirmed = window.confirm(
+                                    `Found extra material?\n\nThis will add 1 new baglet to Batch ${batch.id}.\nCurrent Count: ${batch.actualBagletCount} -> New Count: ${batch.actualBagletCount + 1}`
+                                );
+                                if (!confirmed) return;
+
+                                setUpdatingStatus(true);
+                                try {
+                                    const res = await fetch(`/api/batches/${batch.id}/add-baglet`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ user: 'user@example.com' }), // TODO: Real auth
+                                    });
+
+                                    const data = await res.json();
+                                    if (!res.ok) throw new Error(data.error);
+
+                                    alert(`✅ ${data.message}`);
+                                    // Refresh data
+                                    await fetchBatchDetails();
+                                    router.refresh();
+                                } catch (e: any) {
+                                    alert(`❌ Failed: ${e.message}`);
+                                } finally {
+                                    setUpdatingStatus(false);
+                                }
+                            }}
+                            disabled={updatingStatus}
+                            className="flex items-center gap-2 border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-400"
+                        >
+                            <span className="text-lg">➕</span>
+                            <span>Add Baglet</span>
+                        </Button>
+                    )}
+
                     {/* Rapid Metrics Update - Show if at least one baglet is STERILIZED (or later) */}
                     {/* User requested: "enable if atleast one baglet in sterilized state" */}
                     {((batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 ||
