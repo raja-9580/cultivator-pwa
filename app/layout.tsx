@@ -5,6 +5,7 @@ import Topbar from '@/components/layout/Topbar';
 import BottomNav from '@/components/layout/BottomNav';
 import InstallPWA from '@/components/InstallPWA';
 import { Toaster } from 'sonner';
+import AuthProvider from '@/components/AuthProvider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -18,13 +19,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Cultivator - Mushroom Farm Management',
+  title: 'Cultivation Management System - Mushroom Farm Management',
   description: 'Professional mushroom cultivation tracking and management system for exotic varieties',
-  applicationName: 'Cultivator',
+  applicationName: 'Cultivation Management System',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Cultivator',
+    title: 'Cultivation Management System',
   },
   formatDetection: {
     telephone: false,
@@ -50,16 +51,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-dark-bg text-gray-100 flex flex-col min-h-screen">
-        <Sidebar />
-        <Topbar />
-        <main className="md:ml-64 mt-13 md:mt-14 mb-16 md:mb-0 p-3 md:p-6 flex-1">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-        <BottomNav />
-        <InstallPWA />
-        <Toaster position="top-center" theme="dark" />
+        <AuthProvider>
+          <Sidebar />
+          <Topbar />
+          <main className="md:ml-64 mt-13 md:mt-0 mb-16 md:mb-0 p-3 md:p-6 flex-1">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+          <BottomNav />
+          <InstallPWA />
+          <Toaster position="top-center" theme="dark" />
+        </AuthProvider>
       </body>
     </html>
   );

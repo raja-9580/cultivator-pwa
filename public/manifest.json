@@ -1,6 +1,6 @@
 {
-    "name": "Cultivator - Mushroom Farm Management",
-    "short_name": "Cultivator",
+    "name": "Cultivation Management System - Mushroom Farm Management",
+    "short_name": "Cultivation Management System",
     "description": "Professional mushroom cultivation tracking and management system",
     "start_url": "/",
     "display": "standalone",

@@ -22,11 +22,10 @@ export default function BottomNav() {
             active: pathname?.startsWith('/batches')
         },
         {
-            href: '/metrics',
-            label: 'Scan',
-            icon: '📱',
-            active: pathname === '/metrics',
-            highlight: true // Special scan button
+            href: '/baglets',
+            label: 'Baglets',
+            icon: '📦',
+            active: pathname?.startsWith('/baglets')
         },
         {
             href: '/status-logger',
@@ -35,11 +34,10 @@ export default function BottomNav() {
             active: pathname === '/status-logger'
         },
         {
-            href: '#',
-            label: 'More',
-            icon: '⋯',
-            onClick: () => setShowMore(!showMore),
-            active: false
+            href: '/harvest',
+            label: 'Harvest',
+            icon: '🌿',
+            active: pathname === '/harvest'
         },
     ];
 
@@ -59,12 +57,6 @@ export default function BottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            onClick={(e) => {
-                                if (item.onClick) {
-                                    e.preventDefault();
-                                    item.onClick();
-                                }
-                            }}
                             className={`
                 flex flex-col items-center justify-center
                 min-w-[64px] h-12 px-2 rounded-lg
@@ -73,19 +65,15 @@ export default function BottomNav() {
                                     ? 'text-accent-sky bg-accent-sky/10'
                                     : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/30'
                                 }
-                ${item.highlight
-                                    ? 'relative -mt-2 scale-110 bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
-                                    : ''
-                                }
               `}
                         >
-                            <span className={`text-xl mb-0.5 ${item.highlight ? 'text-2xl' : ''}`}>
+                            <span className="text-xl mb-0.5">
                                 {item.icon}
                             </span>
-                            <span className={`text-[10px] font-medium ${item.highlight ? 'text-xs' : ''}`}>
+                            <span className="text-[10px] font-medium">
                                 {item.label}
                             </span>
-                            {item.active && !item.highlight && (
+                            {item.active && (
                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent-sky rounded-full" />
                             )}
                         </Link>

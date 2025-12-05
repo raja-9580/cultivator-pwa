@@ -15,6 +15,7 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+
 .env
 .env.production.local
 .cache/

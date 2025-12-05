@@ -89,7 +89,7 @@ export default function InstallPWA() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                         <h3 className="text-white font-semibold text-sm mb-1">
-                            Install Cultivator App
+                            Install Cultivation Management System
                         </h3>
                         <p className="text-gray-300 text-xs leading-relaxed">
                             Add to home screen for faster access and offline support

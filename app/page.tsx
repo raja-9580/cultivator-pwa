@@ -60,6 +60,9 @@ export default function DashboardPage() {
   return (
     <PullRefreshWrapper onRefresh={handleRefresh}>
       <div>
+        <div className="flex items-center justify-between mb-4 md:mb-5">
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-100">Dashboard</h1>
+        </div>
         <DashboardStats stats={stats} loading={loading} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
           <div>

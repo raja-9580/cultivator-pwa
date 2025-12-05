@@ -139,7 +139,7 @@ export default function BatchesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 md:mb-5">
-        <h1 className="text-xl md:text-2xl font-semibold text-accent-leaf">Batches</h1>
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-100">Batches</h1>
         <Button
           variant="primary"
           className="hidden md:inline-flex"
