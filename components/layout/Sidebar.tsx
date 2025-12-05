@@ -54,7 +54,7 @@ export default function Sidebar() {
           <Logo className="w-10 h-10 text-accent-neon-green flex-shrink-0" />
           <div className="flex flex-col">
             <span className="text-sm font-bold text-white tracking-wide">{APP_CONFIG.company}</span>
-            <span className="text-xs text-accent-neon-green/80 tracking-wider uppercase">{APP_CONFIG.name}</span>
+            <span className="text-xs text-accent-neon-green/80 tracking-wider">{APP_CONFIG.name}</span>
           </div>
         </div>
 

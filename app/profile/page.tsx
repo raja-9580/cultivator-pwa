@@ -107,15 +107,35 @@ function ProfileContent() {
             )}
 
             {/* Company Branding Footer */}
+            {/* Footer Info */}
             <div className="text-center pt-8 pb-4 flex flex-col items-center gap-2">
-                <div className="relative w-12 h-12 opacity-80 mb-2">
-                    <Logo className="w-full h-full object-contain" />
-                </div>
-                <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-white tracking-wider">{APP_CONFIG.company}</p>
-                    <p className="text-[10px] text-accent-neon-green/70 uppercase tracking-widest">{APP_CONFIG.name}</p>
-                </div>
-                <p className="text-[10px] text-gray-700 mt-2 font-mono">{APP_CONFIG.version}</p>
+                {session ? (
+                    // Profile State: Signature & Version (Branding is in Header)
+                    <>
+                        <div className="flex flex-col items-center">
+                            <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                                {APP_CONFIG.authorLabel}
+                            </p>
+                            <div className="relative inline-block">
+                                <p className="text-sm font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#CE2029] via-white to-[#CE2029] font-bold tracking-wide" style={{ fontFamily: 'cursive' }}>
+                                    {APP_CONFIG.author}
+                                </p>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-gray-700 mt-2 font-mono">{APP_CONFIG.version}</p>
+                    </>
+                ) : (
+                    // Login State: Full Branding (Logo + Company)
+                    <>
+                        <div className="relative w-16 h-16 opacity-90 mb-3">
+                            <Logo className="w-full h-full object-contain" />
+                        </div>
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-bold text-white tracking-wider">{APP_CONFIG.company}</h2>
+                            <p className="text-xs text-accent-neon-green/80 tracking-widest">{APP_CONFIG.name}</p>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

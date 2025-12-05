@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import AppShell from '@/components/layout/AppShell';
 import AuthProvider from '@/components/AuthProvider';
-import CustomSplash from '@/components/CustomSplash';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -53,7 +52,6 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-dark-bg text-gray-100 flex flex-col min-h-screen">
         <AuthProvider>
-          <CustomSplash />
           <AppShell>
             {children}
           </AppShell>
