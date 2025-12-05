@@ -7,6 +7,9 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from 'react';
 
+import Logo from '@/components/ui/Logo';
+import { APP_CONFIG } from '@/lib/app-config';
+
 function ProfileContent() {
     const { data: session } = useSession();
     const searchParams = useSearchParams();
@@ -68,7 +71,7 @@ function ProfileContent() {
                     <div className="text-center py-6">
                         <p className="text-gray-400 mb-6">Sign in to access your farm management tools.</p>
                         <Button
-                            onClick={() => signIn('google')}
+                            onClick={() => signIn('google', { callbackUrl: searchParams.get('callbackUrl') || '/' })}
                             className="w-full bg-white text-black hover:bg-gray-200 flex items-center justify-center gap-2"
                         >
                             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -103,16 +106,16 @@ function ProfileContent() {
                 </Card>
             )}
 
-            {/* Artistic Signature Footer */}
-            <div className="text-center pt-8 pb-4">
-                <p className="text-[10px] text-gray-600 uppercase tracking-[0.2em] mb-2">Engineered by</p>
-                <div className="relative inline-block">
-                    <span className="absolute -inset-1 bg-red-500/20 blur-lg rounded-full opacity-50"></span>
-                    <p className="relative text-2xl md:text-3xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#CE2029] via-white to-[#CE2029] font-bold tracking-wide" style={{ fontFamily: 'cursive' }}>
-                        Raja Selvaraj
-                    </p>
+            {/* Company Branding Footer */}
+            <div className="text-center pt-8 pb-4 flex flex-col items-center gap-2">
+                <div className="relative w-12 h-12 opacity-80 mb-2">
+                    <Logo className="w-full h-full object-contain" />
                 </div>
-                <p className="text-[10px] text-gray-700 mt-4 font-mono">v1.0.0</p>
+                <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-white tracking-wider">{APP_CONFIG.company}</p>
+                    <p className="text-[10px] text-accent-neon-green/70 uppercase tracking-widest">{APP_CONFIG.name}</p>
+                </div>
+                <p className="text-[10px] text-gray-700 mt-2 font-mono">{APP_CONFIG.version}</p>
             </div>
         </div>
     );

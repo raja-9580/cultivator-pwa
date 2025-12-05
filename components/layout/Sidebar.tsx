@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import Logo from '@/components/ui/Logo';
+import { APP_CONFIG } from '@/lib/app-config';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -52,8 +53,8 @@ export default function Sidebar() {
         <div className="p-6 flex items-center gap-4 border-b border-white/5">
           <Logo className="w-10 h-10 text-accent-neon-green flex-shrink-0" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white tracking-wide">Akaththi Farms</span>
-            <span className="text-xs text-accent-neon-green/80 tracking-wider uppercase">Cultivator</span>
+            <span className="text-sm font-bold text-white tracking-wide">{APP_CONFIG.company}</span>
+            <span className="text-xs text-accent-neon-green/80 tracking-wider uppercase">{APP_CONFIG.name}</span>
           </div>
         </div>
 
@@ -80,10 +81,10 @@ export default function Sidebar() {
         {/* Signature Footer */}
         <div className="p-4 border-t border-white/5">
           <div className="text-center">
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-1">Engineered by</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-1">{APP_CONFIG.authorLabel}</p>
             <div className="relative inline-block">
               <p className="text-sm font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#CE2029] via-white to-[#CE2029] font-bold tracking-wide" style={{ fontFamily: 'cursive' }}>
-                Raja Selvaraj
+                {APP_CONFIG.author}
               </p>
             </div>
           </div>

@@ -15,27 +15,31 @@ export const viewport: Viewport = {
   ],
 };
 
+import { APP_CONFIG } from '@/lib/app-config';
+
 export const metadata: Metadata = {
-  title: 'Cultivator - Mushroom Farm Management',
-  description: 'Professional mushroom cultivation tracking and management system for exotic varieties',
-  applicationName: 'Cultivator',
+  title: `${APP_CONFIG.name} - ${APP_CONFIG.tagline}`,
+  description: APP_CONFIG.description,
+  applicationName: APP_CONFIG.name,
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Cultivator',
+    title: APP_CONFIG.name,
   },
   formatDetection: {
     telephone: false,
   },
-  manifest: '/manifest.json',
+  manifest: '/site.webmanifest',
   icons: {
     icon: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/pwa-icon.png', sizes: '512x512', type: 'image/png' },
     ],
+    shortcut: ['/icons/pwa-icon.png'],
     apple: [
-      { url: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
-      { url: '/icons/icon-180x180.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/pwa-icon.png', sizes: '152x152', type: 'image/png' },
+      { url: '/icons/pwa-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };

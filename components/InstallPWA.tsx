@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { APP_CONFIG } from '@/lib/app-config';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -70,26 +71,18 @@ export default function InstallPWA() {
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-teal-500/30 rounded-xl shadow-2xl shadow-teal-500/10 p-4 backdrop-blur-sm">
                 <div className="flex items-start gap-3">
                     {/* Icon */}
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-pink-500 via-amber-500 to-teal-400 rounded-lg flex items-center justify-center shadow-lg">
-                        <svg
-                            className="w-7 h-7 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                            />
-                        </svg>
+                    <div className="flex-shrink-0 w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center shadow-lg border border-white/10">
+                        <img
+                            src={APP_CONFIG.logoPath}
+                            alt="App Icon"
+                            className="w-full h-full object-contain p-2"
+                        />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                         <h3 className="text-white font-semibold text-sm mb-1">
-                            Install Cultivation Management System
+                            Install {APP_CONFIG.name}
                         </h3>
                         <p className="text-gray-300 text-xs leading-relaxed">
                             Add to home screen for faster access and offline support
