@@ -3,7 +3,6 @@
 import Card from '@/components/ui/Card';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import Logo from '@/components/ui/Logo';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from 'react';
@@ -15,8 +14,8 @@ function ProfileContent() {
 
     return (
         <div className="max-w-md mx-auto pt-8 pb-20 px-4 space-y-8">
-            {/* Branding Header */}
-            <div className="flex flex-col items-center text-center space-y-4">
+            {/* Branding Header - Removed as per request to avoid duplication */}
+            {/* <div className="flex flex-col items-center text-center space-y-4">
                 <div className="relative">
                     <div className="absolute inset-0 bg-accent-leaf/20 blur-xl rounded-full"></div>
                     <Logo className="w-24 h-24 relative z-10 drop-shadow-2xl" />
@@ -27,7 +26,7 @@ function ProfileContent() {
                         Cultivation Management System
                     </p>
                 </div>
-            </div>
+            </div> */}
 
             {/* Error Message */}
             {error && (

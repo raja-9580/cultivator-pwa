@@ -21,6 +21,6 @@ export const config = {
          * - sw.js (Service Worker)
          * - workbox-*.js (Workbox scripts)
          */
-        "/((?!api|_next/static|_next/image|favicon.ico|profile|icons|images|manifest.json|sw.js|workbox-.*).*)",
+        // "/((?!api|_next/static|_next/image|favicon.ico|profile|icons|images|manifest.json|sw.js|workbox-.*).*)",
     ]
 }

@@ -14,8 +14,8 @@ export default function Topbar() {
         <div className="flex items-center gap-3 md:hidden">
           <Logo className="w-8 h-8 text-accent-neon-green" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white tracking-wide leading-none">Akaththi Farm</span>
-            <span className="text-[10px] text-accent-neon-green/80 tracking-wider uppercase leading-none mt-0.5">Cultivation System</span>
+            <span className="text-sm font-bold text-white tracking-wide leading-none">Akaththi Farms</span>
+            <span className="text-[10px] text-accent-neon-green/80 tracking-wider uppercase leading-none mt-0.5">Cultivator</span>
           </div>
         </div>
 

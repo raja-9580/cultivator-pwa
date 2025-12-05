@@ -19,13 +19,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Cultivation Management System - Mushroom Farm Management',
+  title: 'Cultivator - Mushroom Farm Management',
   description: 'Professional mushroom cultivation tracking and management system for exotic varieties',
-  applicationName: 'Cultivation Management System',
+  applicationName: 'Cultivator',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Cultivation Management System',
+    title: 'Cultivator',
   },
   formatDetection: {
     telephone: false,

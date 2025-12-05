@@ -52,8 +52,8 @@ export default function Sidebar() {
         <div className="p-6 flex items-center gap-4 border-b border-white/5">
           <Logo className="w-10 h-10 text-accent-neon-green flex-shrink-0" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white tracking-wide">Akaththi Farm</span>
-            <span className="text-xs text-accent-neon-green/80 tracking-wider uppercase">Cultivation Management System</span>
+            <span className="text-sm font-bold text-white tracking-wide">Akaththi Farms</span>
+            <span className="text-xs text-accent-neon-green/80 tracking-wider uppercase">Cultivator</span>
           </div>
         </div>
 
