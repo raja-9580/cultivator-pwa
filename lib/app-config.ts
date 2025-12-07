@@ -8,7 +8,7 @@ export const APP_CONFIG = {
     authorLabel: 'Engineered by',
 
     // Branding
-    logoPath: '/icons/pwa-icon.png', // Main logo
+    logoPath: '/icons/akaththi-icon-192x192.png', // Main logo
 
     // PWA
     pwaShortName: 'Cultivator',
