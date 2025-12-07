@@ -28,17 +28,17 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  manifest: '/site.webmanifest',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icons/pwa-icon.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/pwa-icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/akaththi-icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/akaththi-icon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: ['/icons/pwa-icon.png'],
+    shortcut: ['/icons/akaththi-icon-192x192.png'],
     apple: [
-      { url: '/icons/pwa-icon.png', sizes: '152x152', type: 'image/png' },
-      { url: '/icons/pwa-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/akaththi-icon-152x152.png', sizes: '152x152', type: 'image/png' },
+      { url: '/icons/akaththi-icon-180x180.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };
