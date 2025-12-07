@@ -82,12 +82,15 @@ CREATE TABLE baglet (
   -- Stores the *latest* status for fast lookup.
   -- UI needs this for lists, dashboards, filters.
   -- Avoids expensive "get last log row" queries for every baglet.
-  current_status TEXT,
-  status_updated_at TIMESTAMPTZ,
+  current_status TEXT, 
   latest_weight_g NUMERIC,
   latest_temp_c NUMERIC,
   latest_humidity_pct NUMERIC,
+  latest_ph NUMERIC,
+  harvest_count INT DEFAULT 0,              -- how many harvests done
+  total_harvest_weight_g NUMERIC DEFAULT 0, -- running total if needed
   contamination_flag BOOLEAN DEFAULT FALSE,
+  status_updated_at TIMESTAMPTZ,
   logged_by TEXT,
   logged_timestamp TIMESTAMPTZ DEFAULT now(),
   is_deleted BOOLEAN DEFAULT FALSE
@@ -100,8 +103,20 @@ CREATE TABLE baglet_status_log (
   previous_status TEXT,
   status TEXT NOT NULL,
   notes TEXT,
+  status_timestamp TIMESTAMPTZ DEFAULT now(), -- When the status change actually occurred
   logged_by TEXT,
-  logged_timestamp TIMESTAMPTZ DEFAULT now()
+  logged_timestamp TIMESTAMPTZ DEFAULT now()  -- System entry time
+);
+
+CREATE TABLE harvest (
+  harvest_id BIGSERIAL PRIMARY KEY,
+  baglet_id TEXT NOT NULL REFERENCES baglet(baglet_id),
+  batch_id TEXT NOT NULL REFERENCES batch(batch_id),      -- Added for efficient reporting
+  harvest_weight_g NUMERIC NOT NULL,                      -- Standardized to _g
+  harvested_timestamp TIMESTAMPTZ NOT NULL,               -- The actual time harvest happened
+  notes TEXT,                                             -- Added for quality/flush observations
+  logged_by TEXT,                                         -- User who entered the record
+  logged_timestamp TIMESTAMPTZ DEFAULT now()              -- System entry time
 );
 
 CREATE VIEW v_strain_full AS

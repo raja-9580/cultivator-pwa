@@ -15,8 +15,8 @@ export default function Sidebar() {
     { label: 'Batches', href: '/batches' },
     { label: 'Baglets', href: '/baglets' },
     { label: 'Metrics', href: '/metrics' },
-    { label: 'Harvest', href: '/harvest' },
     { label: 'Status Logger', href: '/status-logger' },
+    { label: 'Harvest', href: '/harvest' },
     { label: 'Reports', href: '/reports' },
     { label: 'Profile', href: '/profile' },
   ];
