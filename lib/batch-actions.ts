@@ -3,6 +3,297 @@ import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput } from './validation-schemas';
 
 // ============================================================
+// BATCH RETRIEVAL LOGIC
+// ============================================================
+
+export interface BatchListItem {
+  id: string;
+  mushroomType: string;
+  substrateCode: string;
+  substrateDescription: string;
+  plannedBagletCount: number;
+  actualBagletCount: number;
+  createdDate: string;
+  preparedDate: string;
+  bagletStatusCounts: Record<string, number>;
+}
+
+/**
+ * Retrieves all batches with baglet counts and status distribution.
+ * This is the core business logic for batch listing.
+ * 
+ * @param sql - Neon SQL client
+ * @returns Array of batches with computed fields
+ * @throws Error if query fails
+ */
+export async function getAllBatches(
+  sql: NeonQueryFunction<false, false>
+): Promise<BatchListItem[]> {
+  const batchesData = await sql`
+    SELECT 
+      b.batch_id,
+      b.farm_id,
+      b.prepared_date,
+      b.batch_sequence,
+      b.substrate_id,
+      b.strain_code,
+      b.baglet_count,
+      b.logged_timestamp,
+      f.farm_name,
+      s.substrate_name,
+      st.strain_code,
+      m.mushroom_name,
+      -- Subquery for actual baglet count
+      (SELECT COUNT(*) FROM baglet WHERE batch_id = b.batch_id AND is_deleted = FALSE) as actual_baglet_count,
+      -- Subquery for status distribution
+      (
+        SELECT json_object_agg(current_status, count)
+        FROM (
+          SELECT current_status, COUNT(*) as count
+          FROM baglet
+          WHERE batch_id = b.batch_id AND is_deleted = FALSE
+          GROUP BY current_status
+        ) t
+      ) as baglet_status_counts
+    FROM batch b
+    LEFT JOIN farm f ON b.farm_id = f.farm_id
+    LEFT JOIN substrate s ON b.substrate_id = s.substrate_id
+    LEFT JOIN strain st ON b.strain_code = st.strain_code
+    LEFT JOIN mushroom m ON st.mushroom_id = m.mushroom_id
+    WHERE b.is_deleted = FALSE
+    ORDER BY b.prepared_date DESC, b.batch_sequence DESC
+  `;
+
+  // Transform database rows to application format
+  return batchesData.map((row) => ({
+    id: row.batch_id,
+    mushroomType: row.mushroom_name,
+    substrateCode: row.substrate_id,
+    substrateDescription: row.substrate_name,
+    plannedBagletCount: row.baglet_count,
+    actualBagletCount: parseInt(row.actual_baglet_count || '0'),
+    createdDate: row.logged_timestamp,
+    preparedDate: row.prepared_date,
+    bagletStatusCounts: row.baglet_status_counts || {},
+  }));
+}
+
+export interface BatchDetails {
+  batch: {
+    id: string;
+    farmId: string;
+    farmName: string;
+    preparedDate: string;
+    sequence: number;
+    mushroomType: string;
+    mushroomId: string;
+    strain: {
+      code: string;
+      vendorId: string;
+      vendorName: string;
+    };
+    substrate: {
+      id: string;
+      name: string;
+      mediums: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
+      supplements: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
+      mediumsForBatch: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
+      supplementsForBatch: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
+    };
+    plannedBagletCount: number;
+    actualBagletCount: number;
+    bagletStatusCounts: Record<string, number>;
+    createdBy: string;
+    createdAt: string;
+  };
+  baglets: Array<{
+    id: string;
+    batchId: string;
+    sequence: number;
+    status: string;
+    statusUpdatedAt: string;
+    weight: number | null;
+    temperature: number | null;
+    humidity: number | null;
+    contaminated: boolean;
+    createdAt: string;
+  }>;
+}
+
+/**
+ * Retrieves detailed information about a specific batch.
+ * Includes substrate mix details, baglet list, and status distribution.
+ * 
+ * @param sql - Neon SQL client
+ * @param batchId - ID of the batch to retrieve
+ * @returns Complete batch details with all related data
+ * @throws Error if batch not found or query fails
+ */
+export async function getBatchDetails(
+  sql: NeonQueryFunction<false, false>,
+  batchId: string
+): Promise<BatchDetails> {
+  // Fetch batch details with all related information
+  const batchData = await sql`
+    SELECT 
+      b.batch_id,
+      b.farm_id,
+      b.prepared_date,
+      b.batch_sequence,
+      b.substrate_id,
+      b.strain_code,
+      b.baglet_count,
+      b.logged_by,
+      b.logged_timestamp,
+      f.farm_name,
+      s.substrate_name,
+      st.strain_code,
+      st.mushroom_id,
+      m.mushroom_name,
+      st.strain_vendor_id,
+      sv.vendor_name,
+      -- Actual baglet count
+      (SELECT COUNT(*) FROM baglet WHERE batch_id = b.batch_id AND is_deleted = FALSE) as actual_baglet_count,
+      -- Status distribution
+      (
+        SELECT json_object_agg(current_status, count)
+        FROM (
+          SELECT current_status, COUNT(*) as count
+          FROM baglet
+          WHERE batch_id = b.batch_id AND is_deleted = FALSE
+          GROUP BY current_status
+        ) t
+      ) as baglet_status_counts
+    FROM batch b
+    LEFT JOIN farm f ON b.farm_id = f.farm_id
+    LEFT JOIN substrate s ON b.substrate_id = s.substrate_id
+    LEFT JOIN strain st ON b.strain_code = st.strain_code
+    LEFT JOIN mushroom m ON st.mushroom_id = m.mushroom_id
+    LEFT JOIN strain_vendor sv ON st.strain_vendor_id = sv.strain_vendor_id
+    WHERE b.batch_id = ${batchId} AND b.is_deleted = FALSE
+  `;
+
+  if (batchData.length === 0) {
+    throw new Error('Batch not found');
+  }
+
+  const batch = batchData[0];
+
+  // Fetch substrate mix details - mediums
+  const mediumsData = await sql`
+    SELECT
+      sm.medium_id,
+      m.medium_name,
+      sm.qty_g
+    FROM substrate_medium sm
+    JOIN medium m ON sm.medium_id = m.medium_id
+    WHERE sm.substrate_id = ${batch.substrate_id}
+    ORDER BY sm.medium_id
+  `;
+
+  const mediumsArray = mediumsData.map((m) => ({
+    medium_id: m.medium_id,
+    medium_name: m.medium_name,
+    qty_g: parseFloat(m.qty_g || 0),
+  }));
+
+  // Fetch substrate mix details - supplements
+  const supplementsData = await sql`
+    SELECT
+      ss.supplement_id,
+      s.supplement_name,
+      ss.qty,
+      s.measure_type as unit
+    FROM substrate_supplement ss
+    JOIN supplement s ON ss.supplement_id = s.supplement_id
+    WHERE ss.substrate_id = ${batch.substrate_id}
+    ORDER BY ss.supplement_id
+  `;
+
+  const supplementsArray = supplementsData.map((s) => ({
+    supplement_id: s.supplement_id,
+    supplement_name: s.supplement_name,
+    qty: parseFloat(s.qty || 0),
+    unit: s.unit,
+  }));
+
+  // Calculate total mix for the batch
+  const bagletCount = batch.baglet_count;
+  const mediumsForBatch = mediumsArray.map((m) => ({
+    ...m,
+    qty_g: m.qty_g * bagletCount,
+  }));
+
+  const supplementsForBatch = supplementsArray.map((s) => ({
+    ...s,
+    qty: s.qty * bagletCount,
+  }));
+
+  // Fetch baglet list for this batch
+  const bagletsData = await sql`
+    SELECT 
+      baglet_id,
+      batch_id,
+      baglet_sequence,
+      current_status,
+      status_updated_at,
+      latest_weight_g,
+      latest_temp_c,
+      latest_humidity_pct,
+      contamination_flag,
+      logged_timestamp
+    FROM baglet
+    WHERE batch_id = ${batchId} AND is_deleted = FALSE
+    ORDER BY baglet_sequence ASC
+  `;
+
+  const baglets = bagletsData.map((b) => ({
+    id: b.baglet_id,
+    batchId: b.batch_id,
+    sequence: b.baglet_sequence,
+    status: b.current_status,
+    statusUpdatedAt: b.status_updated_at,
+    weight: b.latest_weight_g ? parseFloat(b.latest_weight_g) : null,
+    temperature: b.latest_temp_c ? parseFloat(b.latest_temp_c) : null,
+    humidity: b.latest_humidity_pct ? parseFloat(b.latest_humidity_pct) : null,
+    contaminated: b.contamination_flag,
+    createdAt: b.logged_timestamp,
+  }));
+
+  // Build and return response
+  return {
+    batch: {
+      id: batch.batch_id,
+      farmId: batch.farm_id,
+      farmName: batch.farm_name,
+      preparedDate: batch.prepared_date,
+      sequence: batch.batch_sequence,
+      mushroomType: batch.mushroom_name,
+      mushroomId: batch.mushroom_id,
+      strain: {
+        code: batch.strain_code,
+        vendorId: batch.strain_vendor_id,
+        vendorName: batch.vendor_name,
+      },
+      substrate: {
+        id: batch.substrate_id,
+        name: batch.substrate_name,
+        mediums: mediumsArray,
+        supplements: supplementsArray,
+        mediumsForBatch,
+        supplementsForBatch,
+      },
+      plannedBagletCount: batch.baglet_count,
+      actualBagletCount: parseInt(batch.actual_baglet_count || '0'),
+      bagletStatusCounts: batch.baglet_status_counts || {},
+      createdBy: batch.logged_by,
+      createdAt: batch.logged_timestamp,
+    },
+    baglets,
+  };
+}
+
+// ============================================================
 // BATCH PLANNING LOGIC
 // ============================================================
 
