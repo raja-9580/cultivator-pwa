@@ -12,6 +12,7 @@ import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
 import { MUSHROOM_TYPES, Batch } from '@/lib/types';
+import { BATCH_LABELS, BAGLET_LABELS, COMMON_LABELS } from '@/lib/labels';
 import { useRouter } from 'next/navigation';
 
 
@@ -145,7 +146,7 @@ export default function BatchesPage() {
           className="hidden md:inline-flex"
           onClick={() => setIsCreateModalOpen(true)}
         >
-          Create Batch
+          {BATCH_LABELS.PLAN_BATCH}
         </Button>
       </div>
 
@@ -262,7 +263,7 @@ export default function BatchesPage() {
                         href={`/batches/${batch.id}`}
                         className="text-gray-400 hover:text-accent-leaf hover:bg-dark-surface-light/20 transition-colors font-medium rounded-lg px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm flex items-center"
                       >
-                        Details
+                        {COMMON_LABELS.DETAILS}
                       </a>
 
 
@@ -292,7 +293,7 @@ export default function BatchesPage() {
                           }}
                           disabled={updatingBatch === batch.id}
                         >
-                          {updatingBatch === batch.id ? '...' : '+ Add'}
+                          {updatingBatch === batch.id ? '...' : `+ ${BAGLET_LABELS.ADD_BAGLET}`}
                         </Button>
                       )}
 
@@ -305,7 +306,7 @@ export default function BatchesPage() {
                           onClick={() => handleStatusUpdate(batch.id, 'sterilize')}
                           disabled={updatingBatch === batch.id}
                         >
-                          {updatingBatch === batch.id ? '...' : '🔥 Mark Sterilized'}
+                          {updatingBatch === batch.id ? '...' : `🔥 ${BAGLET_LABELS.MARK_STERILIZED}`}
                         </Button>
                       )}
 
@@ -318,7 +319,7 @@ export default function BatchesPage() {
                           onClick={() => handleStatusUpdate(batch.id, 'inoculate')}
                           disabled={updatingBatch === batch.id}
                         >
-                          {updatingBatch === batch.id ? '...' : '💉 Mark Inoculated'}
+                          {updatingBatch === batch.id ? '...' : `💉 ${BAGLET_LABELS.MARK_INOCULATED}`}
                         </Button>
                       )}
 
@@ -332,7 +333,7 @@ export default function BatchesPage() {
                             className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5"
                             onClick={() => handleLogMetrics(batch.id)}
                           >
-                            📊 Log Metrics
+                            📊 {BAGLET_LABELS.LOG_METRICS}
                           </Button>
                         )}
                     </div>
@@ -370,12 +371,12 @@ export default function BatchesPage() {
 
       <FloatingActionButton actions={[
         {
-          label: 'Create Batch',
+          label: BATCH_LABELS.PLAN_BATCH,
           icon: '➕',
           onClick: () => setIsCreateModalOpen(true)
         },
         {
-          label: 'QR Scan',
+          label: COMMON_LABELS.QR_SCAN,
           icon: '📱',
           onClick: () => setIsScannerOpen(true)
         },

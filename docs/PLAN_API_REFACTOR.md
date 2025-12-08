@@ -2,13 +2,17 @@
 
 **Goal:** Centralize business logic, improve validation, and clean up API routes for better maintainability and testability.
 
-## 1. Abstract "Batch" Logic
+## 1. Abstract "Batch" Logic ✅ COMPLETED
+
 *   **Target:** `app/api/batches/route.ts` and `app/api/batches/[id]/...`
 *   **Action:**
-    *   Create `lib/services/batch-service.ts`.
-    *   Move `createBatch` transaction (validation -> strain check -> insertion) into a function `createBatchTransaction(data)`.
-    *   Move `updateBatchStatus` logic into `updateBatchStatus(batchId, status)`.
-*   **Outcome:** API routes become thin wrappers that just handle Request/Response and Auth.
+    *   ✅ Created `lib/validation-schemas.ts` for centralized validation schemas.
+    *   ✅ Created `lib/batch-actions.ts` with `planBatch()` function (renamed from "create" to "plan").
+    *   ✅ Moved batch creation transaction (validation → strain check → insertion) into `planBatch(data)`.
+    *   ✅ API route is now a thin wrapper (35 lines vs 200+ lines).
+*   **Outcome:** API routes are thin wrappers that handle Request/Response and Auth. Business logic is reusable and testable.
+*   **Convention Change:** "Create Batch" → "Plan Batch" throughout the codebase.
+
 
 ## 2. Refactor "Baglet" Logic
 *   **Target:** `app/api/baglets/...`
