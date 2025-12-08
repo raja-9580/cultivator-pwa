@@ -11,6 +11,8 @@ export const BATCH_LABELS = {
     // Actions
     PLAN_BATCH: 'Plan Batch',
     PLAN_NEW_BATCH: 'Plan New Batch',
+    PREPARE_BATCH: 'Prepare Batch',
+    RESUME_PREPARATION: 'Resume Preparation',
 
     // States
     PLANNING: 'Planning...',

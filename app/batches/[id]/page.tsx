@@ -8,37 +8,7 @@ import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
 import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
-
-interface BatchDetails {
-    batch: {
-        id: string;
-        farmId: string;
-        farmName: string;
-        preparedDate: string;
-        sequence: number;
-        mushroomType: string;
-        mushroomId: string;
-        strain: {
-            code: string;
-            vendorId: string;
-            vendorName: string;
-        };
-        substrate: {
-            id: string;
-            name: string;
-            mediums: any[];
-            supplements: any[];
-            mediumsForBatch: any[];
-            supplementsForBatch: any[];
-        };
-        plannedBagletCount: number;
-        actualBagletCount: number;
-        bagletStatusCounts: Record<string, number>;
-        createdBy: string;
-        createdAt: string;
-    };
-    baglets: any[];
-}
+import { BatchDetails } from '@/lib/types';
 
 function formatDate(dateString: string): string {
     if (!dateString) return '—';
@@ -115,7 +85,7 @@ export default function BatchDetailPage() {
             currentStatus = 'STERILIZED';
         }
 
-        const count = batchDetails.batch?.bagletStatusCounts?.[currentStatus] ?? 0;
+        const count = batchDetails.bagletStatusCounts?.[currentStatus] ?? 0;
 
         if (count === 0) {
             alert(`No baglets found in ${currentStatus} status`);
@@ -197,7 +167,9 @@ export default function BatchDetailPage() {
         return null;
     }
 
-    const { batch, baglets } = batchDetails;
+    // batchDetails is now flattened - no nested batch object
+    const batch = batchDetails;
+    const baglets = batchDetails.baglets;
 
     return (
         <div className="space-y-5">

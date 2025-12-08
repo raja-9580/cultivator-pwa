@@ -1,6 +1,4 @@
 
-
-// Baglet Status enum
 // Baglet Status enum
 export enum BagletStatus {
   NONE = 'NONE',
@@ -28,16 +26,8 @@ export enum BagletStatus {
 }
 
 // Mushroom types
-export const MUSHROOM_TYPES = [
-  'Golden Oyster',
-  'Elm Oyster',
-  'Blue Oyster',
-  'King Oyster',
-  'Shiitake',
-  'Lion\'s Mane',
-] as const;
-
-export type MushroomType = typeof MUSHROOM_TYPES[number];
+// Mushroom types
+export type MushroomType = string;
 
 // Core Entities
 export interface Batch {
@@ -86,4 +76,62 @@ export interface StatusLogEntry {
   newStatus: BagletStatus;
   timestamp: Date;
   notes?: string;
+}
+
+// ==========================================
+// DTOs (Data Transfer Objects)
+// Used in API responses and frontend views
+// ==========================================
+
+export interface BatchListItem {
+  id: string;
+  mushroomType: string;
+  substrateCode: string;
+  substrateDescription: string;
+  plannedBagletCount: number;
+  actualBagletCount: number;
+  createdDate: string;
+  preparedDate: string;
+  bagletStatusCounts: Record<string, number>;
+}
+
+export interface BatchDetails {
+  id: string;
+  farmId: string;
+  farmName: string;
+  preparedDate: string;
+  sequence: number;
+  mushroomType: string;
+  mushroomId: string;
+  strain: {
+    code: string;
+    vendorId: string;
+    vendorName: string;
+  };
+  substrate: {
+    id: string;
+    name: string;
+    mediums: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
+    supplements: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
+    mediumsForBatch: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
+    supplementsForBatch: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
+  };
+  plannedBagletCount: number;
+  actualBagletCount: number;
+  bagletStatusCounts: Record<string, number>;
+  createdBy: string;
+  createdAt: string;
+  baglets: Array<{
+    id: string;
+    batchId: string;
+    sequence: number;
+    status: string;
+    statusUpdatedAt: string;
+    weight: number | null;
+    temperature: number | null;
+    humidity: number | null;
+    ph?: number | null;
+    contaminated: boolean;
+    createdAt: string;
+  }>;
 }
