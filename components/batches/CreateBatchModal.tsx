@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { APP_CONFIG } from '@/lib/config';
+import { BATCH_LABELS, COMMON_LABELS } from '@/lib/labels';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { useMediaQuery } from '@/lib/hooks';
 
@@ -121,8 +122,8 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
                 alert(`❌ Error: ${data.error}`);
             }
         } catch (error: any) {
-            console.error('Failed to create batch:', error);
-            alert(`❌ Failed to create batch: ${error.message}`);
+            console.error(BATCH_LABELS.FAILED_TO_PLAN_BATCH, error);
+            alert(`❌ ${BATCH_LABELS.FAILED_TO_PLAN_BATCH}: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -173,7 +174,7 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
                         className="w-full mt-4"
                         onClick={handleCloseSuccess}
                     >
-                        Done
+                        {COMMON_LABELS.DONE}
                     </Button>
                 </div>
             );
@@ -190,7 +191,7 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
                             { value: '', label: '-- Select Strain --' },
                             ...strains.map((strain) => ({
                                 value: strain.strain_code,
-                                label: `${strain.mushroom_name} – ${strain.strain_code}`,
+                                label: `${strain.mushroom_name} – ${strain.strain_code} (${strain.vendor_name})`,
                             })),
                         ]}
                         value={formData.strain_code}
@@ -263,7 +264,7 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
                         className="w-full sm:flex-1 order-2 sm:order-1"
                         disabled={loading}
                     >
-                        Cancel
+                        {COMMON_LABELS.CANCEL}
                     </Button>
                     <Button
                         type="submit"
@@ -271,7 +272,7 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
                         className="w-full sm:flex-1 order-1 sm:order-2"
                         disabled={loading || strains.length === 0 || substrates.length === 0}
                     >
-                        {loading ? 'Creating...' : 'Create Batch'}
+                        {loading ? BATCH_LABELS.PLANNING : BATCH_LABELS.PLAN_BATCH}
                     </Button>
                 </div>
             </form>
@@ -280,7 +281,7 @@ export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateB
 
     if (!isOpen) return null;
 
-    const title = creationResult ? 'Batch Created Successfully!' : 'Create New Batch';
+    const title = creationResult ? BATCH_LABELS.BATCH_PLANNED_SUCCESS : BATCH_LABELS.PLAN_NEW_BATCH;
 
     if (isMobile) {
         return (
