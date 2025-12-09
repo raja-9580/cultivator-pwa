@@ -202,7 +202,7 @@ export default function BatchDetailPage() {
                         if (stage === 'PREPARE' || stage === 'RESUME') {
                             return (
                                 <Button variant="primary" size="sm" onClick={() => setIsPrepareModalOpen(true)} className="flex items-center gap-2">
-                                    <span className="text-lg">📝</span>
+                                    <span className="text-lg">🧫</span>
                                     <span>{stage === 'PREPARE' ? BATCH_LABELS.PREPARE_BATCH : BATCH_LABELS.RESUME_PREPARATION}</span>
                                 </Button>
                             );

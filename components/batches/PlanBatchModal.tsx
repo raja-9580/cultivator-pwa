@@ -8,6 +8,7 @@ import { APP_CONFIG } from '@/lib/config';
 import { BATCH_LABELS, COMMON_LABELS } from '@/lib/labels';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { useMediaQuery } from '@/lib/hooks';
+import { useSession } from 'next-auth/react';
 
 interface Strain {
     strain_code: string;
@@ -35,15 +36,25 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
     const [substrates, setSubstrates] = useState<Substrate[]>([]);
     const [loading, setLoading] = useState(false);
     const [creationResult, setCreationResult] = useState<any | null>(null);
+
+    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { data: session } = useSession();
+    const userEmail = session?.user?.email || 'user@example.com';
+
     const [formData, setFormData] = useState({
         strain_code: '',
         substrate_id: '',
         prepared_date: new Date().toISOString().split('T')[0],
         baglet_count: APP_CONFIG.DEFAULT_BAGLET_COUNT as number,
-        created_by: 'user@example.com', // TODO: Get from auth
+        created_by: 'user@example.com',
     });
 
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    // Update created_by when session loads
+    useEffect(() => {
+        if (userEmail) {
+            setFormData(prev => ({ ...prev, created_by: userEmail }));
+        }
+    }, [userEmail]);
 
     useEffect(() => {
         if (isOpen) {
@@ -116,7 +127,7 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                     substrate_id: '',
                     prepared_date: new Date().toISOString().split('T')[0],
                     baglet_count: APP_CONFIG.DEFAULT_BAGLET_COUNT,
-                    created_by: 'user@example.com',
+                    created_by: userEmail,
                 });
             } else {
                 alert(`❌ Error: ${data.error}`);
