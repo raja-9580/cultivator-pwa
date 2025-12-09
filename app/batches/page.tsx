@@ -7,9 +7,9 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
-import CreateBatchModal from '@/components/batches/CreateBatchModal';
+import PlanBatchModal from '@/components/batches/PlanBatchModal';
 import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
-import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
+import BatchMetricsWizardModal from '@/components/batches/BatchMetricsWizardModal';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
 import { Batch, BatchDetails } from '@/lib/types';
@@ -405,14 +405,14 @@ export default function BatchesPage() {
         />
       )}
 
-      <BatchMetricsWizard
+      <BatchMetricsWizardModal
         isOpen={showMetricsWizard}
         onClose={() => setShowMetricsWizard(false)}
         baglets={wizardBaglets}
         onUpdate={fetchBatches}
       />
 
-      <CreateBatchModal
+      <PlanBatchModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={fetchBatches}

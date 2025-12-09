@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
-import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
+import BatchMetricsWizardModal from '@/components/batches/BatchMetricsWizardModal';
 import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
@@ -296,7 +296,7 @@ export default function BatchDetailPage() {
             </div>
 
             {/* Metrics Wizard */}
-            <BatchMetricsWizard
+            <BatchMetricsWizardModal
                 isOpen={showMetricsWizard}
                 onClose={() => setShowMetricsWizard(false)}
                 baglets={baglets}

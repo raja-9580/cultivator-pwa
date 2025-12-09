@@ -24,13 +24,13 @@ interface Substrate {
     supplements: any[];
 }
 
-interface CreateBatchModalProps {
+interface PlanBatchModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
 }
 
-export default function CreateBatchModal({ isOpen, onClose, onSuccess }: CreateBatchModalProps) {
+export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatchModalProps) {
     const [strains, setStrains] = useState<Strain[]>([]);
     const [substrates, setSubstrates] = useState<Substrate[]>([]);
     const [loading, setLoading] = useState(false);

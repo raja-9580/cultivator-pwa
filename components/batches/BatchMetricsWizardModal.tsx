@@ -12,7 +12,7 @@ interface BatchMetricsWizardProps {
     onUpdate: () => void; // Callback to refresh data
 }
 
-export default function BatchMetricsWizard({ isOpen, onClose, baglets, onUpdate }: BatchMetricsWizardProps) {
+export default function BatchMetricsWizardModal({ isOpen, onClose, baglets, onUpdate }: BatchMetricsWizardProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentBaglet, setCurrentBaglet] = useState<any>(null);
     const [weight, setWeight] = useState<string>('');
