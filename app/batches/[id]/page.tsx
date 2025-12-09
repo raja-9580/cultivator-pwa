@@ -8,7 +8,10 @@ import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
 import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
+import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
+import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
+import { BATCH_LABELS } from '@/lib/labels';
 
 function formatDate(dateString: string): string {
     if (!dateString) return '—';
@@ -42,6 +45,7 @@ export default function BatchDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [showMetricsWizard, setShowMetricsWizard] = useState(false);
+    const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
 
     async function fetchBatchDetails() {
         try {
@@ -192,19 +196,28 @@ export default function BatchDetailPage() {
 
                 {/* Bulk Actions in Header */}
                 <div className="flex flex-wrap gap-2">
-                    {/* Flag Sterilized - Show if at least one baglet is PLANNED */}
-                    {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleStatusUpdate('sterilize')}
-                            disabled={updatingStatus}
-                            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none"
-                        >
-                            <span className="text-lg">🔥</span>
-                            <span>{updatingStatus ? 'Updating...' : `Mark Sterilized (${batch.bagletStatusCounts['PLANNED']})`}</span>
-                        </Button>
-                    )}
+                    {/* Smart Workflow Buttons */}
+                    {(() => {
+                        const stage = getBatchWorkflowStage(batch.bagletStatusCounts || {});
+                        if (stage === 'PREPARE' || stage === 'RESUME') {
+                            return (
+                                <Button variant="primary" size="sm" onClick={() => setIsPrepareModalOpen(true)} className="flex items-center gap-2">
+                                    <span className="text-lg">📝</span>
+                                    <span>{stage === 'PREPARE' ? BATCH_LABELS.PREPARE_BATCH : BATCH_LABELS.RESUME_PREPARATION}</span>
+                                </Button>
+                            );
+                        }
+                        if (stage === 'STERILIZE') {
+                            const preparedCount = batch.bagletStatusCounts?.['PREPARED'] ?? 0;
+                            return (
+                                <Button variant="primary" size="sm" onClick={() => handleStatusUpdate('sterilize')} disabled={updatingStatus} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none">
+                                    <span className="text-lg">🔥</span>
+                                    <span>{updatingStatus ? 'Updating...' : `Mark Sterilized (${preparedCount})`}</span>
+                                </Button>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {/* Flag Inoculated - Show if at least one baglet is STERILIZED */}
                     {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
@@ -292,6 +305,19 @@ export default function BatchDetailPage() {
                     router.refresh();
                 }}
             />
+
+            {/* Prepare Batch Modal */}
+            {batchDetails && (
+                <PrepareBatchModal
+                    isOpen={isPrepareModalOpen}
+                    onClose={() => setIsPrepareModalOpen(false)}
+                    batch={batchDetails}
+                    onUpdate={() => {
+                        fetchBatchDetails();
+                        router.refresh();
+                    }}
+                />
+            )}
 
             {/* Batch Summary */}
             <Card className="border border-gray-800/30">
