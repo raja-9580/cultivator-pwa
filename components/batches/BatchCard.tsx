@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-
 import Button from '@/components/ui/Button';
 import { Batch } from '@/lib/types';
-
-
+import { BATCH_LABELS } from '@/lib/labels';
+import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 
 function formatDate(date: Date | string | null | undefined): string {
     if (!date) return '—';
@@ -19,11 +18,15 @@ function formatDate(date: Date | string | null | undefined): string {
 interface BatchCardProps {
     batch: Batch;
     onStatusUpdate: (batchId: string, action: 'sterilize' | 'inoculate') => void;
+    onPrepare: (batchId: string) => void;
     updatingBatch: string | null;
 }
 
-export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: BatchCardProps) {
+export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBatch }: BatchCardProps) {
     const isUpdating = updatingBatch === batch.id;
+
+    // Centralized Workflow Logic
+    const stage = getBatchWorkflowStage(batch.bagletStatusCounts);
 
     return (
         <div className="bg-dark-surface border border-gray-800/30 rounded-xl p-4 hover:border-gray-700/50 transition-all duration-200 shadow-sm hover:shadow-md">
@@ -38,7 +41,6 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                     </Link>
                     <p className="text-gray-400 text-xs mt-0.5">{batch.mushroomType}</p>
                 </div>
-
             </div>
 
             {/* Metrics Grid */}
@@ -64,7 +66,19 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                     View Details
                 </Link>
 
-                {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                {(stage === 'PREPARE' || stage === 'RESUME') && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs px-3 py-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                        onClick={() => onPrepare(batch.id)}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? '...' : (stage === 'RESUME' ? BATCH_LABELS.RESUME_PREPARATION : BATCH_LABELS.PREPARE_BATCH)}
+                    </Button>
+                )}
+
+                {stage === 'STERILIZE' && (
                     <Button
                         variant="secondary"
                         size="sm"
@@ -72,11 +86,11 @@ export default function BatchCard({ batch, onStatusUpdate, updatingBatch }: Batc
                         onClick={() => onStatusUpdate(batch.id, 'sterilize')}
                         disabled={isUpdating}
                     >
-                        {isUpdating ? '...' : '🔥 Sterilize'}
+                        {isUpdating ? '...' : '🔥 Start Sterilization'}
                     </Button>
                 )}
 
-                {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
+                {stage === 'INOCULATE' && (
                     <Button
                         variant="secondary"
                         size="sm"

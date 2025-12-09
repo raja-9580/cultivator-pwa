@@ -39,3 +39,70 @@ export function validateTransition(currentStatus: BagletStatus, nextStatus: Bagl
     const allowed = BAGLET_TRANSITIONS[currentStatus];
     return allowed ? allowed.includes(nextStatus) : false;
 }
+
+/**
+ * Statuses that indicate a baglet is no longer active in the production line.
+ * These are ignored when calculating batch progress (e.g., preparation %, sterilization %).
+ */
+export const TERMINAL_STATUSES = [
+    BagletStatus.DELETED,
+    BagletStatus.CONTAMINATED,
+    BagletStatus.CRC_ANALYZED,
+    BagletStatus.DAMAGED,
+    BagletStatus.DISPOSED,
+    BagletStatus.RECYCLED,
+] as const;
+
+/**
+ * Checks if a baglet is active (i.e., not in a terminal/ignored state).
+ */
+export function isBagletActive(status: BagletStatus | string): boolean {
+    // Cast to BagletStatus to check against the list
+    // We cast to readonly any[] to bypass the specific tuple type check since we know BagletStatus is a superset
+    return !(TERMINAL_STATUSES as readonly any[]).includes(status);
+}
+
+/**
+ * Calculates the total number of active baglets from a status count map.
+ */
+export function getActiveItemCount(statusCounts: Record<string, number>): number {
+    let total = 0;
+    Object.entries(statusCounts || {}).forEach(([status, count]) => {
+        if (isBagletActive(status)) {
+            total += count;
+        }
+    });
+    return total;
+}
+
+// Workflow Stages for UI determination
+export type BatchStage = 'PREPARE' | 'RESUME' | 'STERILIZE' | 'INOCULATE' | 'NONE';
+
+/**
+ * Determines the current workflow stage for a batch based on its baglet status counts.
+ * This effectively implements the "Strict Phase Gate" logic centrally.
+ */
+export function getBatchWorkflowStage(statusCounts: Record<string, number> | undefined): BatchStage {
+    if (!statusCounts) return 'NONE';
+
+    const planned = statusCounts['PLANNED'] ?? 0;
+    const prepared = statusCounts['PREPARED'] ?? 0;
+    const sterilized = statusCounts['STERILIZED'] ?? 0;
+
+    // Phase 1: Preparation (Gate: Must clear all PLANNED)
+    if (planned > 0) {
+        return prepared > 0 ? 'RESUME' : 'PREPARE';
+    }
+
+    // Phase 2: Sterilization (Gate: Must have items ready to sterilize)
+    if (prepared > 0) {
+        return 'STERILIZE';
+    }
+
+    // Phase 3: Inoculation
+    if (sterilized > 0) {
+        return 'INOCULATE';
+    }
+
+    return 'NONE';
+}

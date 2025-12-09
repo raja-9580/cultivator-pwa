@@ -6,6 +6,7 @@ const MetricsSchema = z.object({
     weight: z.number().optional(),
     temperature: z.number().optional(),
     humidity: z.number().optional(),
+    ph: z.number().optional(),
 });
 
 export async function POST(
@@ -36,7 +37,7 @@ export async function POST(
             );
         }
 
-        const { weight, temperature, humidity } = validationResult.data;
+        const { weight, temperature, humidity, ph } = validationResult.data;
 
         // Check if baglet exists
         const bagletCheck = await sql`
@@ -62,6 +63,7 @@ export async function POST(
                 latest_weight_g = COALESCE(${weight}::numeric, latest_weight_g),
                 latest_temp_c = COALESCE(${temperature}::numeric, latest_temp_c),
                 latest_humidity_pct = COALESCE(${humidity}::numeric, latest_humidity_pct),
+                latest_ph = COALESCE(${ph}::numeric, latest_ph),
                 -- We might want to update logged_timestamp or a specific metrics_updated_at if we had one
                 -- For now, we don't touch status_updated_at as that tracks STATUS changes (e.g. PLANNED -> STERILIZED)
                 logged_timestamp = NOW() 
@@ -76,7 +78,8 @@ export async function POST(
             updated: {
                 weight,
                 temperature,
-                humidity
+                humidity,
+                ph
             }
         });
 

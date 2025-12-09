@@ -7,11 +7,13 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
-import CreateBatchModal from '@/components/batches/CreateBatchModal';
-import BatchMetricsWizard from '@/components/batches/BatchMetricsWizard';
+import PlanBatchModal from '@/components/batches/PlanBatchModal';
+import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
+import BatchMetricsWizardModal from '@/components/batches/BatchMetricsWizardModal';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
-import { MUSHROOM_TYPES, Batch } from '@/lib/types';
+import { Batch, BatchDetails } from '@/lib/types';
+import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 import { BATCH_LABELS, BAGLET_LABELS, COMMON_LABELS } from '@/lib/labels';
 import { useRouter } from 'next/navigation';
 
@@ -39,6 +41,11 @@ export default function BatchesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [updatingBatch, setUpdatingBatch] = useState<string | null>(null);
+
+  // Preparation State
+  const [preparingBatchData, setPreparingBatchData] = useState<BatchDetails | null>(null);
+  const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
+
   const [showMetricsWizard, setShowMetricsWizard] = useState(false);
   const [wizardBaglets, setWizardBaglets] = useState<any[]>([]);
   const router = useRouter();
@@ -73,9 +80,30 @@ export default function BatchesPage() {
     }
   }
 
+  async function handlePrepare(batchId: string) {
+    try {
+      setUpdatingBatch(batchId);
+      const res = await fetch(`/api/batches/${batchId}`);
+      const data = await res.json();
+
+      if (data.id) {
+        setPreparingBatchData(data);
+        setIsPrepareModalOpen(true);
+      } else {
+        alert('Failed to load batch details');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error loading batch');
+    } finally {
+      setUpdatingBatch(null);
+    }
+  }
+
   async function handleStatusUpdate(batchId: string, action: 'sterilize' | 'inoculate') {
     const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-    const currentStatus = action === 'sterilize' ? 'PLANNED' : 'STERILIZED';
+    // Workflow Update: Sterilization now happens AFTER Preparation
+    const currentStatus = action === 'sterilize' ? 'PREPARED' : 'STERILIZED';
 
     // Find the batch to get the count
     const batch = batches.find(b => b.id === batchId);
@@ -166,7 +194,9 @@ export default function BatchesPage() {
             label="Mushroom Type"
             options={[
               { value: '', label: 'All Types' },
-              ...MUSHROOM_TYPES.map((type) => ({ value: type, label: type })),
+              ...Array.from(new Set(batches.map(b => b.mushroomType)))
+                .sort()
+                .map((type) => ({ value: type, label: type })),
             ]}
             value={filters.mushroomType}
             onChange={(e) =>
@@ -198,6 +228,7 @@ export default function BatchesPage() {
             key={batch.id}
             batch={batch}
             onStatusUpdate={handleStatusUpdate}
+            onPrepare={handlePrepare}
             updatingBatch={updatingBatch}
           />
         ))}
@@ -297,8 +328,24 @@ export default function BatchesPage() {
                         </Button>
                       )}
 
-                      {/* Flag Sterilized - Show if at least one baglet is PLANNED */}
-                      {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                      {/* WORKFLOW ACTIONS (Centralized) */}
+                      {['PREPARE', 'RESUME'].includes(getBatchWorkflowStage(batch.bagletStatusCounts)) && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
+                          onClick={() => handlePrepare(batch.id)}
+                          disabled={updatingBatch === batch.id}
+                        >
+                          {updatingBatch === batch.id ? '...' : (
+                            getBatchWorkflowStage(batch.bagletStatusCounts) === 'RESUME'
+                              ? BATCH_LABELS.RESUME_PREPARATION
+                              : BATCH_LABELS.PREPARE_BATCH
+                          )}
+                        </Button>
+                      )}
+
+                      {getBatchWorkflowStage(batch.bagletStatusCounts) === 'STERILIZE' && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -310,8 +357,7 @@ export default function BatchesPage() {
                         </Button>
                       )}
 
-                      {/* Flag Inoculated - Show if at least one baglet is STERILIZED */}
-                      {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
+                      {getBatchWorkflowStage(batch.bagletStatusCounts) === 'INOCULATE' && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -350,14 +396,23 @@ export default function BatchesPage() {
         )}
       </Card>
 
-      <BatchMetricsWizard
+      {preparingBatchData && (
+        <PrepareBatchModal
+          isOpen={isPrepareModalOpen}
+          onClose={() => setIsPrepareModalOpen(false)}
+          batch={preparingBatchData}
+          onUpdate={fetchBatches}
+        />
+      )}
+
+      <BatchMetricsWizardModal
         isOpen={showMetricsWizard}
         onClose={() => setShowMetricsWizard(false)}
         baglets={wizardBaglets}
         onUpdate={fetchBatches}
       />
 
-      <CreateBatchModal
+      <PlanBatchModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={fetchBatches}

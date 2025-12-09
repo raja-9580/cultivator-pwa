@@ -1,22 +1,12 @@
 
 import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput } from './validation-schemas';
+import { BatchListItem, BatchDetails } from './types';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
 // ============================================================
 
-export interface BatchListItem {
-  id: string;
-  mushroomType: string;
-  substrateCode: string;
-  substrateDescription: string;
-  plannedBagletCount: number;
-  actualBagletCount: number;
-  createdDate: string;
-  preparedDate: string;
-  bagletStatusCounts: Record<string, number>;
-}
 
 /**
  * Retrieves all batches with baglet counts and status distribution.
@@ -78,47 +68,6 @@ export async function getAllBatches(
   }));
 }
 
-export interface BatchDetails {
-  batch: {
-    id: string;
-    farmId: string;
-    farmName: string;
-    preparedDate: string;
-    sequence: number;
-    mushroomType: string;
-    mushroomId: string;
-    strain: {
-      code: string;
-      vendorId: string;
-      vendorName: string;
-    };
-    substrate: {
-      id: string;
-      name: string;
-      mediums: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
-      supplements: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
-      mediumsForBatch: Array<{ medium_id: string; medium_name: string; qty_g: number }>;
-      supplementsForBatch: Array<{ supplement_id: string; supplement_name: string; qty: number; unit: string }>;
-    };
-    plannedBagletCount: number;
-    actualBagletCount: number;
-    bagletStatusCounts: Record<string, number>;
-    createdBy: string;
-    createdAt: string;
-  };
-  baglets: Array<{
-    id: string;
-    batchId: string;
-    sequence: number;
-    status: string;
-    statusUpdatedAt: string;
-    weight: number | null;
-    temperature: number | null;
-    humidity: number | null;
-    contaminated: boolean;
-    createdAt: string;
-  }>;
-}
 
 /**
  * Retrieves detailed information about a specific batch.
@@ -240,6 +189,7 @@ export async function getBatchDetails(
       latest_weight_g,
       latest_temp_c,
       latest_humidity_pct,
+      latest_ph,
       contamination_flag,
       logged_timestamp
     FROM baglet
@@ -256,39 +206,38 @@ export async function getBatchDetails(
     weight: b.latest_weight_g ? parseFloat(b.latest_weight_g) : null,
     temperature: b.latest_temp_c ? parseFloat(b.latest_temp_c) : null,
     humidity: b.latest_humidity_pct ? parseFloat(b.latest_humidity_pct) : null,
+    ph: b.latest_ph ? parseFloat(b.latest_ph) : null,
     contaminated: b.contamination_flag,
     createdAt: b.logged_timestamp,
   }));
 
-  // Build and return response
+  // Build and return response (flattened structure)
   return {
-    batch: {
-      id: batch.batch_id,
-      farmId: batch.farm_id,
-      farmName: batch.farm_name,
-      preparedDate: batch.prepared_date,
-      sequence: batch.batch_sequence,
-      mushroomType: batch.mushroom_name,
-      mushroomId: batch.mushroom_id,
-      strain: {
-        code: batch.strain_code,
-        vendorId: batch.strain_vendor_id,
-        vendorName: batch.vendor_name,
-      },
-      substrate: {
-        id: batch.substrate_id,
-        name: batch.substrate_name,
-        mediums: mediumsArray,
-        supplements: supplementsArray,
-        mediumsForBatch,
-        supplementsForBatch,
-      },
-      plannedBagletCount: batch.baglet_count,
-      actualBagletCount: parseInt(batch.actual_baglet_count || '0'),
-      bagletStatusCounts: batch.baglet_status_counts || {},
-      createdBy: batch.logged_by,
-      createdAt: batch.logged_timestamp,
+    id: batch.batch_id,
+    farmId: batch.farm_id,
+    farmName: batch.farm_name,
+    preparedDate: batch.prepared_date,
+    sequence: batch.batch_sequence,
+    mushroomType: batch.mushroom_name,
+    mushroomId: batch.mushroom_id,
+    strain: {
+      code: batch.strain_code,
+      vendorId: batch.strain_vendor_id,
+      vendorName: batch.vendor_name,
     },
+    substrate: {
+      id: batch.substrate_id,
+      name: batch.substrate_name,
+      mediums: mediumsArray,
+      supplements: supplementsArray,
+      mediumsForBatch,
+      supplementsForBatch,
+    },
+    plannedBagletCount: batch.baglet_count,
+    actualBagletCount: parseInt(batch.actual_baglet_count || '0'),
+    bagletStatusCounts: batch.baglet_status_counts || {},
+    createdBy: batch.logged_by,
+    createdAt: batch.logged_timestamp,
     baglets,
   };
 }
