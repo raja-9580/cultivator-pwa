@@ -21,7 +21,11 @@ export async function GET(
     );
   }
 
-  const sql = neon(DATABASE_URL);
+  const sql = neon(DATABASE_URL, {
+    fetchOptions: {
+      cache: 'no-store',
+    },
+  });
   const batchId = params.id;
 
   try {
