@@ -86,7 +86,7 @@ export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBa
                         onClick={() => onStatusUpdate(batch.id, 'sterilize')}
                         disabled={isUpdating}
                     >
-                        {isUpdating ? '...' : '🔥 Start Sterilization'}
+                        {isUpdating ? '...' : `🔥 ${BATCH_LABELS.STERILIZE_BATCH}`}
                     </Button>
                 )}
 

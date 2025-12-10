@@ -15,3 +15,10 @@ export const PlanBatchSchema = z.object({
 });
 
 export type PlanBatchInput = z.infer<typeof PlanBatchSchema>;
+
+export const UpdateBatchStatusSchema = z.object({
+    action: z.enum(['sterilize', 'inoculate']),
+    updated_by: z.string().email(),
+});
+
+export type UpdateBatchStatusInput = z.infer<typeof UpdateBatchStatusSchema>;

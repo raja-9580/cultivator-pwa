@@ -94,7 +94,7 @@ export function getBatchWorkflowStage(statusCounts: Record<string, number> | und
         return prepared > 0 ? 'RESUME' : 'PREPARE';
     }
 
-    // Phase 2: Sterilization (Gate: Must have items ready to sterilize)
+    // Phase 2: Sterilization (Gate: Must clear all PREPARED)
     if (prepared > 0) {
         return 'STERILIZE';
     }

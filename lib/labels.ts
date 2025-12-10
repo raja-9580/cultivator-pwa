@@ -13,12 +13,15 @@ export const BATCH_LABELS = {
     PLAN_NEW_BATCH: 'Plan New Batch',
     PREPARE_BATCH: 'Prepare Batch',
     RESUME_PREPARATION: 'Resume Preparation',
+    STERILIZE_BATCH: 'Sterilize Batch',
 
     // States
     PLANNING: 'Planning...',
 
     // Success Messages
     BATCH_PLANNED_SUCCESS: 'Batch Planned Successfully!',
+    STERILIZATION_COMPLETE: (count: number) => `✅ Sterilization complete - ${count} baglets sterilized`,
+    INOCULATION_COMPLETE: (count: number) => `✅ Inoculation complete - ${count} baglets inoculated`,
 
     // Error Messages
     FAILED_TO_PLAN_BATCH: 'Failed to plan batch',
@@ -31,7 +34,6 @@ export const BATCH_LABELS = {
 export const BAGLET_LABELS = {
     MARK_STERILIZED: 'Mark Sterilized',
     MARK_INOCULATED: 'Mark Inoculated',
-    LOG_METRICS: 'Log Metrics',
     ADD_BAGLET: 'Add',
 } as const;
 
