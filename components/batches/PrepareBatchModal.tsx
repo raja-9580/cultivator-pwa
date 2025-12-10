@@ -94,7 +94,7 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
             setHumidity(baglet.humidity?.toString() || '');
             setPh(baglet.ph?.toString() || '');
         }
-    }, [currentIndex, eligibleBaglets]);
+    }, [currentIndex, eligibleBaglets, step]);
 
     const handleIngredientToggle = (ingredientId: string) => {
         setIngredientChecks(prev => ({ ...prev, [ingredientId]: !prev[ingredientId] }));
@@ -128,6 +128,19 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
 
     const handleSaveAndNext = async () => {
         if (!currentBaglet) return;
+
+        // If already PREPARED, just move to next (readonly mode)
+        if (currentBaglet.status === 'PREPARED') {
+            if (currentIndex < eligibleBaglets.length - 1) {
+                setCurrentIndex(prev => prev + 1);
+            } else {
+                onUpdate();
+                onClose();
+            }
+            return;
+        }
+
+        // For PLANNED baglets, save metrics and update status
         setSaving(true);
 
         try {
@@ -237,7 +250,9 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                             {/* Baglet Info */}
                             {currentBaglet && (
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
-                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Current Baglet</div>
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">
+                                        Current Baglet {currentBaglet.status === 'PREPARED' && <span className="ml-2 text-accent-leaf">(Already Prepared - View Only)</span>}
+                                    </div>
                                     <div className="text-xl font-mono text-white tracking-tight">
                                         {currentBaglet.id}
                                     </div>
@@ -246,10 +261,35 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
 
                             {/* Inputs */}
                             <div className="grid grid-cols-2 gap-4">
-                                <InputGroup label="Weight (g)" value={weight} onChange={setWeight} placeholder="0.0" autoFocus />
-                                <InputGroup label="pH Level" value={ph} onChange={setPh} placeholder="0.0" />
-                                <InputGroup label="Temp (°C)" value={temperature} onChange={setTemperature} placeholder="0.0" />
-                                <InputGroup label="Humidity (%)" value={humidity} onChange={setHumidity} placeholder="0.0" />
+                                <InputGroup
+                                    label="Weight (g)"
+                                    value={weight}
+                                    onChange={setWeight}
+                                    placeholder="0.0"
+                                    autoFocus
+                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                />
+                                <InputGroup
+                                    label="pH Level"
+                                    value={ph}
+                                    onChange={setPh}
+                                    placeholder="0.0"
+                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                />
+                                <InputGroup
+                                    label="Temp (°C)"
+                                    value={temperature}
+                                    onChange={setTemperature}
+                                    placeholder="0.0"
+                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                />
+                                <InputGroup
+                                    label="Humidity (%)"
+                                    value={humidity}
+                                    onChange={setHumidity}
+                                    placeholder="0.0"
+                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                />
                             </div>
 
                             <div className="flex gap-2 pt-6 border-t border-white/5 mt-2">
@@ -272,10 +312,13 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                                 <Button
                                     variant="primary"
                                     onClick={handleSaveAndNext}
-                                    disabled={saving || !weight || !temperature || !humidity || !ph}
+                                    disabled={currentBaglet?.status === 'PLANNED' && (saving || !weight || !temperature || !humidity || !ph)}
                                     className="flex-[2]"
                                 >
-                                    {saving ? 'Saving...' : (currentIndex === eligibleBaglets.length - 1 ? 'Finish' : 'Save & Next')}
+                                    {currentBaglet?.status === 'PREPARED'
+                                        ? (currentIndex === eligibleBaglets.length - 1 ? 'Finish' : 'Next')
+                                        : (saving ? 'Saving...' : (currentIndex === eligibleBaglets.length - 1 ? 'Finish' : 'Save & Next'))
+                                    }
                                 </Button>
                             </div>
                         </div>
@@ -313,12 +356,13 @@ function IngredientCheckItem({ name, quantity, checked, onChange }: {
     );
 }
 
-function InputGroup({ label, value, onChange, placeholder, autoFocus }: {
+function InputGroup({ label, value, onChange, placeholder, autoFocus, readOnly }: {
     label: string,
     value: string,
     onChange: (v: string) => void,
     placeholder?: string,
-    autoFocus?: boolean
+    autoFocus?: boolean,
+    readOnly?: boolean
 }) {
     return (
         <div>
@@ -330,7 +374,11 @@ function InputGroup({ label, value, onChange, placeholder, autoFocus }: {
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 autoFocus={autoFocus}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white font-mono focus:outline-none focus:border-accent-leaf/50 transition-colors"
+                readOnly={readOnly}
+                className={`w-full border rounded-lg px-3 py-2.5 font-mono focus:outline-none transition-colors ${readOnly
+                        ? 'bg-white/5 border-white/10 text-gray-400 cursor-not-allowed'
+                        : 'bg-white/5 border-white/10 text-white focus:border-accent-leaf/50'
+                    }`}
             />
         </div>
     );
