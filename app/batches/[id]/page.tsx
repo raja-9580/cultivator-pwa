@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
-import BatchMetricsWizardModal from '@/components/batches/BatchMetricsWizardModal';
+
 import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
@@ -44,7 +44,7 @@ export default function BatchDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
-    const [showMetricsWizard, setShowMetricsWizard] = useState(false);
+
     const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
 
     async function fetchBatchDetails() {
@@ -83,7 +83,7 @@ export default function BatchDetailPage() {
 
         if (action === 'sterilize') {
             actionName = 'STERILIZED';
-            currentStatus = 'PLANNED';
+            currentStatus = 'PREPARED';
         } else if (action === 'inoculate') {
             actionName = 'INOCULATED';
             currentStatus = 'STERILIZED';
@@ -119,7 +119,11 @@ export default function BatchDetailPage() {
                 throw new Error(data.error || 'Failed to update status');
             }
 
-            alert(`✅ Updated ${data.updated_count} baglets to ${data.to_status}`);
+            const actionMessage = action === 'sterilize'
+                ? BATCH_LABELS.STERILIZATION_COMPLETE(data.updated_count)
+                : BATCH_LABELS.INOCULATION_COMPLETE(data.updated_count);
+
+            alert(actionMessage);
 
             // Force a complete refresh of the page data
             setLoading(true);
@@ -212,7 +216,7 @@ export default function BatchDetailPage() {
                             return (
                                 <Button variant="primary" size="sm" onClick={() => handleStatusUpdate('sterilize')} disabled={updatingStatus} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none">
                                     <span className="text-lg">🔥</span>
-                                    <span>{updatingStatus ? 'Updating...' : `Mark Sterilized (${preparedCount})`}</span>
+                                    <span>{updatingStatus ? 'Updating...' : `${BATCH_LABELS.STERILIZE_BATCH} (${preparedCount})`}</span>
                                 </Button>
                             );
                         }
@@ -277,34 +281,10 @@ export default function BatchDetailPage() {
                         </Button>
                     )}
 
-                    {/* Rapid Metrics Update - Show if at least one baglet is STERILIZED (or later) */}
-                    {/* User requested: "enable if atleast one baglet in sterilized state" */}
-                    {((batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 ||
-                        (batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 ||
-                        (batch.bagletStatusCounts?.['INCUBATED'] ?? 0) > 0) && (
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setShowMetricsWizard(true)}
-                                className="flex items-center gap-2"
-                            >
-                                <span className="text-lg">📊</span>
-                                <span>Log Metrics</span>
-                            </Button>
-                        )}
                 </div>
             </div>
 
-            {/* Metrics Wizard */}
-            <BatchMetricsWizardModal
-                isOpen={showMetricsWizard}
-                onClose={() => setShowMetricsWizard(false)}
-                baglets={baglets}
-                onUpdate={() => {
-                    fetchBatchDetails();
-                    router.refresh();
-                }}
-            />
+
 
             {/* Prepare Batch Modal */}
             {batchDetails && (

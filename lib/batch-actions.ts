@@ -1,7 +1,8 @@
 
 import { NeonQueryFunction } from '@neondatabase/serverless';
-import { PlanBatchInput } from './validation-schemas';
-import { BatchListItem, BatchDetails } from './types';
+import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
+import { BatchListItem, BatchDetails, BagletStatus } from './types';
+import { updateBagletStatusWithLogInTransaction } from './baglet-actions';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
@@ -559,4 +560,92 @@ export async function addBagletToBatch(
     bagletId: newBagletId,
     sequence: nextSeq
   };
+}
+
+// ============================================================
+// BATCH STATUS UPDATE LOGIC
+// ============================================================
+
+interface UpdateBatchStatusResult {
+  updated_count: number;
+  from_status: string;
+  to_status: string;
+}
+
+/**
+ * Bulk update baglet statuses for a batch.
+ * Follows the same transaction pattern as planBatch.
+ * 
+ * @param sql - Neon SQL client
+ * @param batchId - ID of the batch to update
+ * @param input - Validated status update input
+ * @returns Update result with count and status transition
+ * @throws Error if no baglets found or transaction fails
+ */
+export async function updateBatchStatus(
+  sql: NeonQueryFunction<false, false>,
+  batchId: string,
+  input: UpdateBatchStatusInput
+): Promise<UpdateBatchStatusResult> {
+  const { action, updated_by } = input;
+
+  // Determine the from/to status based on action
+  let fromStatus: string;
+  let toStatus: string;
+
+  if (action === 'sterilize') {
+    fromStatus = 'PREPARED';
+    toStatus = 'STERILIZED';
+  } else if (action === 'inoculate') {
+    fromStatus = 'STERILIZED';
+    toStatus = 'INOCULATED';
+  } else {
+    throw new Error('Invalid action');
+  }
+
+  // BEGIN TRANSACTION
+  await sql`BEGIN`;
+
+  try {
+    // Get baglets to update
+    const bagletsToUpdate = await sql`
+      SELECT baglet_id
+      FROM baglet
+      WHERE batch_id = ${batchId}
+        AND current_status = ${fromStatus}
+        AND is_deleted = FALSE
+    `;
+
+    if (bagletsToUpdate.length === 0) {
+      await sql`ROLLBACK`;
+      throw new Error(`No baglets found in ${fromStatus} status`);
+    }
+
+    // Update all matching baglets and insert status logs
+    for (const baglet of bagletsToUpdate) {
+      await updateBagletStatusWithLogInTransaction(sql, {
+        bagletId: baglet.baglet_id,
+        batchId,
+        currentStatus: fromStatus as BagletStatus,
+        newStatus: toStatus as BagletStatus,
+        notes: 'Bulk status update via batch workflow',
+        user: updated_by,
+      });
+    }
+
+    // COMMIT TRANSACTION
+    await sql`COMMIT`;
+
+    console.log(`✅ Updated ${bagletsToUpdate.length} baglets from ${fromStatus} to ${toStatus}`);
+
+    return {
+      updated_count: bagletsToUpdate.length,
+      from_status: fromStatus,
+      to_status: toStatus,
+    };
+  } catch (innerError: any) {
+    // ROLLBACK on error
+    await sql`ROLLBACK`;
+    throw innerError;
+  }
 }
