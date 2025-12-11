@@ -14,6 +14,7 @@ export const BATCH_LABELS = {
     PREPARE_BATCH: 'Prepare Batch',
     RESUME_PREPARATION: 'Resume Preparation',
     STERILIZE_BATCH: 'Sterilize Batch',
+    INOCULATE_BATCH: 'Inoculate Batch',
 
     // States
     PLANNING: 'Planning...',

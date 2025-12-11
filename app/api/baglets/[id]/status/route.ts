@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { BagletStatus } from '@/lib/types';
 import { validateTransition } from '@/lib/baglet-workflow';
-import { updateBagletStatusWithLog } from '@/lib/baglet-actions';
+import { updateBagletStatus } from '@/lib/baglet-actions';
 
 export async function POST(
     request: Request,
@@ -50,15 +50,22 @@ export async function POST(
             }, { status: 400 });
         }
 
-        // 3. Update Status in Database & Log (Using Reusable Action)
-        await updateBagletStatusWithLog(sql, {
-            bagletId,
-            batchId,
-            currentStatus,
-            newStatus: newStatus as BagletStatus,
-            notes: body.notes,
-            user: 'user' // TODO: Replace with actual user
-        });
+        // 3. Update Status in Database & Log (Using Transaction)
+        await sql`BEGIN`;
+        try {
+            await updateBagletStatus(sql, {
+                bagletId,
+                batchId,
+                currentStatus,
+                newStatus: newStatus as BagletStatus,
+                notes: body.notes,
+                user: 'user' // TODO: Replace with actual user
+            });
+            await sql`COMMIT`;
+        } catch (txError) {
+            await sql`ROLLBACK`;
+            throw txError;
+        }
 
         console.log(`✅ Updated baglet ${bagletId} status: ${currentStatus} -> ${newStatus}`);
 

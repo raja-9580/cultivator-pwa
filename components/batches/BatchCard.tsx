@@ -101,6 +101,20 @@ export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBa
                         {isUpdating ? '...' : '💉 Inoculate'}
                     </Button>
                 )}
+
+                {/* Export Labels - Show when inoculated baglets exist */}
+                {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10"
+                        onClick={() => {
+                            window.location.href = `/api/batches/${batch.id}/export-labels`;
+                        }}
+                    >
+                        📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
+                    </Button>
+                )}
             </div>
         </div>
     );

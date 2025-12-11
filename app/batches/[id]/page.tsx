@@ -78,26 +78,29 @@ export default function BatchDetailPage() {
     async function handleStatusUpdate(action: 'sterilize' | 'inoculate') {
         if (!batchDetails) return;
 
-        let actionName = '';
-        let currentStatus = '';
+        // Action configuration mapping
+        const actionConfig = {
+            sterilize: {
+                targetStatus: 'STERILIZED',
+                currentStatus: 'PREPARED',
+                successMessage: BATCH_LABELS.STERILIZATION_COMPLETE,
+            },
+            inoculate: {
+                targetStatus: 'INOCULATED',
+                currentStatus: 'STERILIZED',
+                successMessage: BATCH_LABELS.INOCULATION_COMPLETE,
+            },
+        }[action];
 
-        if (action === 'sterilize') {
-            actionName = 'STERILIZED';
-            currentStatus = 'PREPARED';
-        } else if (action === 'inoculate') {
-            actionName = 'INOCULATED';
-            currentStatus = 'STERILIZED';
-        }
-
-        const count = batchDetails.bagletStatusCounts?.[currentStatus] ?? 0;
+        const count = batchDetails.bagletStatusCounts?.[actionConfig.currentStatus] ?? 0;
 
         if (count === 0) {
-            alert(`No baglets found in ${currentStatus} status`);
+            alert(`No baglets found in ${actionConfig.currentStatus} status`);
             return;
         }
 
         const confirmed = window.confirm(
-            `Do you want to update the status of all ${count} baglets in Batch "${batchId}" to '${actionName}'?`
+            `Do you want to update the status of all ${count} baglets in Batch "${batchId}" to '${actionConfig.targetStatus}'?`
         );
 
         if (!confirmed) return;
@@ -119,11 +122,7 @@ export default function BatchDetailPage() {
                 throw new Error(data.error || 'Failed to update status');
             }
 
-            const actionMessage = action === 'sterilize'
-                ? BATCH_LABELS.STERILIZATION_COMPLETE(data.updated_count)
-                : BATCH_LABELS.INOCULATION_COMPLETE(data.updated_count);
-
-            alert(actionMessage);
+            alert(actionConfig.successMessage(data.updated_count));
 
             // Force a complete refresh of the page data
             setLoading(true);
@@ -220,20 +219,30 @@ export default function BatchDetailPage() {
                                 </Button>
                             );
                         }
+                        if (stage === 'INOCULATE') {
+                            const sterilizedCount = batch.bagletStatusCounts?.['STERILIZED'] ?? 0;
+                            return (
+                                <Button variant="primary" size="sm" onClick={() => handleStatusUpdate('inoculate')} disabled={updatingStatus} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none">
+                                    <span className="text-lg">💉</span>
+                                    <span>{updatingStatus ? 'Updating...' : `${BATCH_LABELS.INOCULATE_BATCH} (${sterilizedCount})`}</span>
+                                </Button>
+                            );
+                        }
                         return null;
                     })()}
 
-                    {/* Flag Inoculated - Show if at least one baglet is STERILIZED */}
-                    {(batch.bagletStatusCounts?.['STERILIZED'] ?? 0) > 0 && (
+                    {/* Export Labels for QR Printing - Show when inoculated baglets exist */}
+                    {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
                         <Button
-                            variant="primary"
+                            variant="secondary"
                             size="sm"
-                            onClick={() => handleStatusUpdate('inoculate')}
-                            disabled={updatingStatus}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none"
+                            onClick={() => {
+                                window.location.href = `/api/batches/${batch.id}/export-labels`;
+                            }}
+                            className="flex items-center gap-2 border-green-500/30 hover:bg-green-500/10 text-green-400"
                         >
-                            <span className="text-lg">💉</span>
-                            <span>{updatingStatus ? 'Updating...' : `Mark Inoculated (${batch.bagletStatusCounts['STERILIZED']})`}</span>
+                            <span className="text-lg">📊</span>
+                            <span>Export Labels ({batch.bagletStatusCounts['INOCULATED']})</span>
                         </Button>
                     )}
 

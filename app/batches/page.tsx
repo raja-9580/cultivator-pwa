@@ -356,6 +356,20 @@ export default function BatchesPage() {
                         </Button>
                       )}
 
+                      {/* Export Labels - Show when inoculated baglets exist */}
+                      {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 text-green-400 hover:text-green-300 border-green-500/30 hover:bg-green-500/10"
+                          onClick={() => {
+                            window.location.href = `/api/batches/${batch.id}/export-labels`;
+                          }}
+                        >
+                          📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
+                        </Button>
+                      )}
+
 
                     </div>
                   </td>
