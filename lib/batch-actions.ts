@@ -2,7 +2,7 @@
 import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
-import { updateBagletStatusWithLogInTransaction } from './baglet-actions';
+import { updateBagletStatus } from './baglet-actions';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
@@ -623,7 +623,7 @@ export async function updateBatchStatus(
 
     // Update all matching baglets and insert status logs
     for (const baglet of bagletsToUpdate) {
-      await updateBagletStatusWithLogInTransaction(sql, {
+      await updateBagletStatus(sql, {
         bagletId: baglet.baglet_id,
         batchId,
         currentStatus: fromStatus as BagletStatus,
@@ -648,4 +648,51 @@ export async function updateBatchStatus(
     await sql`ROLLBACK`;
     throw innerError;
   }
+}
+
+// ============================================================
+// BATCH EXPORT LOGIC
+// ============================================================
+
+interface BagletQRExportData {
+  batch_id: string;
+  baglet_id: string;
+  weight_in_grams: string | number;
+  inoculated_date: string;
+  mushroom_name: string;
+}
+
+/**
+ * Retrieves baglet data for QR label printing export.
+ * Returns data formatted for CSV/Excel with baglet details.
+ * 
+ * @param sql - Neon SQL client
+ * @param batchId - ID of the batch to export
+ * @param status - Optional baglet status filter (defaults to 'INOCULATED')
+ * @returns Array of baglet data ready for QR label export
+ * @throws Error if no baglets found with specified status
+ */
+export async function exportBagletsForQRLabels(
+  sql: NeonQueryFunction<false, false>,
+  batchId: string,
+  status: BagletStatus = 'INOCULATED' as BagletStatus
+): Promise<BagletQRExportData[]> {
+  // Use reusable baglet query function
+  const { getBagletsByBatchAndStatus } = await import('./baglet-actions');
+  const baglets = await getBagletsByBatchAndStatus(sql, batchId, status);
+
+  if (baglets.length === 0) {
+    throw new Error(`No baglets found with status '${status}' for this batch`);
+  }
+
+  // Format data for export with user-friendly column names
+  return baglets.map(b => ({
+    batch_id: b.batch_id,
+    baglet_id: b.baglet_id,
+    weight_in_grams: b.weight_in_grams || 'NA',
+    inoculated_date: b.status_updated_at
+      ? new Date(b.status_updated_at).toLocaleDateString('en-US')
+      : 'NA',
+    mushroom_name: b.mushroom_name,
+  }));
 }
