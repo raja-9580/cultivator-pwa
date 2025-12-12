@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, QrCode, Weight, FileText, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, QrCode, Weight, FileText, CheckCircle, TrendingUp, Package } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import QrScanner from '@/components/ui/QrScanner';
 import { toast } from 'sonner';
@@ -15,13 +16,55 @@ interface BagletDetails {
     totalHarvestWeight: number;
 }
 
+interface HarvestStats {
+    readyCount: number;
+    harvestedCount: number;
+    harvestedWeight: number;
+}
+
+interface ReadyBaglet {
+    id: string;
+    batchId: string;
+    mushroomType: string;
+    currentStatus: string;
+    daysSincePinned: number;
+    harvestCount: number;
+}
+
 export default function HarvestPage() {
+    const router = useRouter();
     const [searchId, setSearchId] = useState('');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [baglet, setBaglet] = useState<BagletDetails | null>(null);
     const [weight, setWeight] = useState('');
     const [notes, setNotes] = useState('');
+    const [stats, setStats] = useState<HarvestStats | null>(null);
+    const [readyBaglets, setReadyBaglets] = useState<ReadyBaglet[]>([]);
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    useEffect(() => {
+        loadStatsAndReady();
+    }, []);
+
+    const loadStatsAndReady = async () => {
+        try {
+            setStatsLoading(true);
+            const res = await fetch(`/api/harvest/dashboard?_t=${Date.now()}`, {
+                cache: 'no-store'
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setStats(data.stats);
+                setReadyBaglets(data.readyBaglets);
+            }
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        } finally {
+            setStatsLoading(false);
+        }
+    };
 
     const handleSearch = async (id: string) => {
         if (!id) return;
@@ -85,6 +128,11 @@ export default function HarvestPage() {
                 setSearchId('');
                 setWeight('');
                 setNotes('');
+                // Small delay to ensure DB write propagation
+                setTimeout(() => {
+                    router.refresh(); // Clear Next.js client cache
+                    loadStatsAndReady();
+                }, 500);
             } else {
                 toast.error(data.error || 'Failed to record harvest');
             }
@@ -103,40 +151,44 @@ export default function HarvestPage() {
             </div>
 
             {!baglet && (
-                <Card variant="default" className="p-6">
-                    <div className="flex flex-col md:flex-row gap-4">
+                <Card variant="default" className="p-4">
+                    <div className="flex gap-2">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Enter Baglet ID"
+                                placeholder="Baglet ID"
                                 value={searchId}
                                 onChange={(e) => setSearchId(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchId)}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-10 py-3 text-white focus:outline-none focus:border-accent-leaf/50 transition-colors"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-9 py-3 text-white text-sm focus:outline-none focus:border-accent-leaf/50 transition-colors"
                             />
-                            {searchId && (
-                                <button
-                                    onClick={() => setSearchId('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                                >
-                                    ✕
-                                </button>
-                            )}
+                            {searchId ? (
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <button
+                                        onClick={() => {
+                                            setSearchId('');
+                                            setBaglet(null);
+                                        }}
+                                        className="text-gray-500 hover:text-white p-1"
+                                    >
+                                        ✕
+                                    </button>
+                                    <button
+                                        onClick={() => handleSearch(searchId)}
+                                        className="text-accent-leaf hover:text-accent-leaf/80 p-1"
+                                    >
+                                        <TrendingUp className="rotate-90" size={18} />
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
                         <button
-                            onClick={() => handleSearch(searchId)}
-                            disabled={loading}
-                            className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
-                        >
-                            Search
-                        </button>
-                        <button
                             onClick={() => setIsScannerOpen(true)}
-                            className="bg-accent-leaf/10 hover:bg-accent-leaf/20 text-accent-leaf border border-accent-leaf/30 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                            className="bg-accent-leaf/10 hover:bg-accent-leaf/20 text-accent-leaf border border-accent-leaf/30 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         >
                             <QrCode size={20} />
-                            Scan
+                            <span className="hidden md:inline">Scan</span>
                         </button>
                     </div>
                 </Card>
@@ -237,6 +289,77 @@ export default function HarvestPage() {
                         </Card>
                     </div>
                 </div>
+            )}
+
+            {/* Stats & Ready List - Bottom for context */}
+            {!baglet && (
+                <>
+                    {statsLoading ? (
+                        <div className="grid grid-cols-3 gap-4 mt-6">
+                            {[1, 2, 3].map((i) => (
+                                <Card key={i} variant="default" className="p-4">
+                                    <div className="h-16 bg-white/5 animate-pulse rounded" />
+                                </Card>
+                            ))}
+                        </div>
+                    ) : stats && (
+                        <div className="grid grid-cols-3 gap-3 mt-6">
+                            <Card variant="default" className="p-3 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Ready</p>
+                                    <div className="flex items-baseline gap-1">
+                                        <p className="text-white text-2xl font-bold">{stats.readyCount}</p>
+                                        <Package className="text-accent-leaf opacity-50" size={14} />
+                                    </div>
+                                </div>
+                            </Card>
+                            <Card variant="default" className="p-3 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Today</p>
+                                    <div className="flex items-baseline gap-1">
+                                        <p className="text-white text-2xl font-bold">{stats.harvestedCount}</p>
+                                        <CheckCircle className="text-green-400 opacity-50" size={14} />
+                                    </div>
+                                </div>
+                            </Card>
+                            <Card variant="default" className="p-3 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Weight</p>
+                                    <div className="flex items-baseline gap-1">
+                                        <p className="text-white text-2xl font-bold">{stats.harvestedWeight.toFixed(0)}</p>
+                                        <span className="text-xs text-gray-500 font-medium">g</span>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
+                    {readyBaglets.length > 0 && (
+                        <Card variant="default" className="p-4 mt-4">
+                            <h3 className="text-white font-semibold mb-3">Ready ({readyBaglets.length})</h3>
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                                {readyBaglets.map((ready) => (
+                                    <button
+                                        key={ready.id}
+                                        onClick={() => handleSearch(ready.id)}
+                                        className="w-full text-left p-3 rounded-lg bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/20 transition-colors"
+                                    >
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-white font-mono text-xs font-medium break-all leading-tight">{ready.id}</p>
+                                                <p className="text-gray-400 text-xs mt-1">{ready.mushroomType} • Flush #{ready.harvestCount + 1}</p>
+                                            </div>
+                                            <div className="text-right flex-shrink-0">
+                                                <p className="text-gray-400 text-xs font-medium">{ready.daysSincePinned}d</p>
+                                                <p className="text-gray-500 text-xs">{ready.currentStatus}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
+                </>
             )}
 
             <QrScanner
