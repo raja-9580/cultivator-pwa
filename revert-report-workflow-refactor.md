@@ -128,4 +128,119 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 - Tasks 4 & 5 are similar patterns (bulk operations) but kept separate for clean testing
 - Task 6 depends on all transition configs being defined
 
+---
+
+## Additional Hardcoded Patterns (Fix When Time Permits)
+
+### 📍 Batch List Page (`app/batches/page.tsx`)
+
+**Lines 90-92** - `handleStatusUpdate` function:
+```typescript
+const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
+const currentStatus = action === 'sterilize' ? 'PREPARED' : 'STERILIZED';
+```
+**Fix:** Use `BATCH_ACTIONS[action].to` and `BATCH_ACTIONS[action].from` from centralized config
+
+**Line 323** - Add Baglet button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+```
+**Fix:** Create helper like `hasStatusCount(statusCounts, INITIAL_BAGLET_STATUS)`
+
+**Line 399** - Export Labels button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INOCULATION_TRANSITION.to` or create helper `hasInoculatedBaglets(statusCounts)`
+
+**Line 408** - Export button label:
+```typescript
+📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
+```
+**Fix:** Same as above
+
+---
+
+### 📍 Batch Detail Page (`app/batches/[id]/page.tsx`)
+
+**Line 217** - Prepared count for Sterilize button:
+```typescript
+const preparedCount = batch.bagletStatusCounts?.['PREPARED'] ?? 0;
+```
+**Fix:** Use `STERILIZATION_TRANSITION.from`
+
+**Line 226** - Sterilized count for Inoculate button:
+```typescript
+const sterilizedCount = batch.bagletStatusCounts?.['STERILIZED'] ?? 0;
+```
+**Fix:** Use `INOCULATION_TRANSITION.from`
+
+**Line 238** - Export Labels visibility:
+```typescript
+{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INOCULATION_TRANSITION.to`
+
+**Line 248** - Export Labels count display:
+```typescript
+<span>Export Labels ({batch.bagletStatusCounts['INOCULATED']})</span>
+```
+**Fix:** Use `INOCULATION_TRANSITION.to`
+
+**Line 257** - Add Baglet button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INITIAL_BAGLET_STATUS`
+
+---
+
+### 📍 Prepare Batch Modal (`components/batches/PrepareBatchModal.tsx`)
+
+**Line 168** - Status transition:
+```typescript
+newStatus: 'PREPARED',
+```
+**Fix:** Create `PREPARATION_TRANSITION` config (Task 3)
+
+---
+
+### 📍 Workflow Configuration (`lib/baglet-workflow.ts`)
+
+**Lines 106-108** - Status checks in `getBatchWorkflowStage`:
+```typescript
+const planned = statusCounts['PLANNED'] ?? 0;
+const prepared = statusCounts['PREPARED'] ?? 0;
+const sterilized = statusCounts['STERILIZED'] ?? 0;
+```
+**Fix:** Use centralized transition configs instead of hardcoded strings
+
+---
+
+## Recommended Helper Functions
+
+To eliminate UI hardcoded strings, consider adding these helpers to `lib/baglet-workflow.ts`:
+
+```typescript
+// Get count for a specific status
+export function getStatusCount(
+  statusCounts: Record<string, number> | undefined, 
+  status: BagletStatus
+): number {
+  return statusCounts?.[status] ?? 0;
+}
+
+// Check if batch has baglets in specific status
+export function hasStatus(
+  statusCounts: Record<string, number> | undefined,
+  status: BagletStatus
+): boolean {
+  return getStatusCount(statusCounts, status) > 0;
+}
+```
+
+These helpers would centralize the pattern and make UI code cleaner.
+
+---
+
 
