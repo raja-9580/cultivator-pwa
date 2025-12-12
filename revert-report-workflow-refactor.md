@@ -1,7 +1,7 @@
 # Tech Debt Refactor Revert & Feature Plan
 
 **Date:** 2025-12-12  
-**Status:** In Progress (Tasks 1, 2 & 4 ✅ Complete)
+**Status:** In Progress (Tasks 1, 2, 4 & 5 ✅ Complete)
 
 This report details the reversion of the "Hardcoded Batch Workflow Transitions" refactor. We have reverted to a clean state. Going forward, we will refactor the code **one business feature at a time** to ensure stability and testability.
 
@@ -78,27 +78,22 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 
 ---
 
-### 5. Batch Inoculation (Bulk Action: STERILIZED → INOCULATED)
-**Current Issue:**
-- Similar to sterilization: `'STERILIZED'` → `'INOCULATED'` hardcoded in multiple places
+### ✅ Task 5: Batch Inoculation (Bulk Action: STERILIZED → INOCULATED) - COMPLETE
+**What Changed:**
+- **File:** `lib/baglet-workflow.ts`
+  - Added `INOCULATION_TRANSITION` constant with `from: STERILIZED` and `to: INOCULATED`
+- **File:** `lib/batch-actions.ts`
+  - Updated `updateBatchStatus` function to use `INOCULATION_TRANSITION.from` and `INOCULATION_TRANSITION.to`
+  - Removed hardcoded `'STERILIZED'` and `'INOCULATED'` strings
+- **File:** `app/batches/[id]/page.tsx`
+  - Updated `actionConfig` for inoculate action to use `INOCULATION_TRANSITION`
+  - Removed hardcoded status strings from frontend
 
-**Refactor Approach:**
-1. Add to `lib/baglet-workflow.ts`:
-   ```typescript
-   export const INOCULATION_TRANSITION = {
-     from: BagletStatus.STERILIZED,
-     to: BagletStatus.INOCULATED,
-   };
-   ```
-2. Update `updateBatchStatus` 
-3. Update frontend components
-4. **Test ONLY:** Inoculation workflow
-
-**Files to Touch:**
-- `lib/baglet-workflow.ts` (add config)
-- `lib/batch-actions.ts` (`updateBatchStatus` function)
-- `app/batches/[id]/page.tsx` (action config object)
-- `app/batches/page.tsx` (if inoculation triggered from list)
+**Impact:**
+- Inoculation workflow now uses centralized config
+- Single source of truth for STERILIZED → INOCULATED transition
+- Both backend and frontend share same configuration
+- **Test:** Inoculation workflow (STERILIZED → INOCULATED)
 
 ---
 
