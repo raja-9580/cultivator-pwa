@@ -54,6 +54,18 @@ export const TERMINAL_STATUSES = [
 ] as const;
 
 /**
+ * Statuses that indicate a baglet is currently growing/pinning and potentially ready for harvest.
+ * Used for filtering "Ready to Harvest" lists.
+ */
+export const HARVEST_READY_STATUSES = [
+    BagletStatus.PINNED,
+    BagletStatus.REPINNED_1,
+    BagletStatus.REPINNED_2,
+    BagletStatus.REPINNED_3,
+    BagletStatus.REPINNED_4,
+] as const;
+
+/**
  * Checks if a baglet is active (i.e., not in a terminal/ignored state).
  */
 export function isBagletActive(status: BagletStatus | string): boolean {

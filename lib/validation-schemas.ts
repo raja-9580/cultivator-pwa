@@ -22,3 +22,12 @@ export const UpdateBatchStatusSchema = z.object({
 });
 
 export type UpdateBatchStatusInput = z.infer<typeof UpdateBatchStatusSchema>;
+
+export const RecordHarvestSchema = z.object({
+    bagletId: z.string().min(1, 'Baglet ID is required'),
+    weight: z.number().positive('Weight must be greater than 0'),
+    notes: z.string().optional(),
+    harvestedBy: z.string().min(1, 'User is required'),
+});
+
+export type RecordHarvestInput = z.infer<typeof RecordHarvestSchema>;

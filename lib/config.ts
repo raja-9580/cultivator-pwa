@@ -17,6 +17,10 @@ export const APP_CONFIG = {
 
     // API Timeouts (ms)
     API_TIMEOUT: 30000,
+
+    // Harvest Settings
+    /** Minimum days since PINNED to show in ready list (0 = all) */
+    HARVEST_MIN_DAYS: 0,
 } as const;
 
 export type AppConfig = typeof APP_CONFIG;
