@@ -1,7 +1,7 @@
 # Tech Debt Refactor Revert & Feature Plan
 
 **Date:** 2025-12-12  
-**Status:** In Progress (Tasks 1 & 2 ✅ Complete)
+**Status:** In Progress (Tasks 1, 2 & 4 ✅ Complete)
 
 This report details the reversion of the "Hardcoded Batch Workflow Transitions" refactor. We have reverted to a clean state. Going forward, we will refactor the code **one business feature at a time** to ensure stability and testability.
 
@@ -59,28 +59,22 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 
 ---
 
-### 4. Batch Sterilization (Bulk Action: PREPARED → STERILIZED)
-**Current Issue:**
-- **Backend:** `updateBatchStatus` hardcodes `'PREPARED'` → `'STERILIZED'` transition
-- **Frontend:** Sterilize button/modal hardcode same status strings in action config (line 82-86)
+### ✅ Task 4: Batch Sterilization (Bulk Action: PREPARED → STERILIZED) - COMPLETE
+**What Changed:**
+- **File:** `lib/baglet-workflow.ts`
+  - Added `STERILIZATION_TRANSITION` constant with `from: PREPARED` and `to: STERILIZED`
+- **File:** `lib/batch-actions.ts`
+  - Updated `updateBatchStatus` function to use `STERILIZATION_TRANSITION.from` and `STERILIZATION_TRANSITION.to`
+  - Removed hardcoded `'PREPARED'` and `'STERILIZED'` strings
+- **File:** `app/batches/[id]/page.tsx`
+  - Updated `actionConfig` for sterilize action to use `STERILIZATION_TRANSITION`
+  - Removed hardcoded status strings from frontend
 
-**Refactor Approach:**
-1. Create centralized sterilization config in `lib/baglet-workflow.ts`:
-   ```typescript
-   export const STERILIZATION_TRANSITION = {
-     from: BagletStatus.PREPARED,
-     to: BagletStatus.STERILIZED,
-   };
-   ```
-2. Update `updateBatchStatus` to use config (when `action === 'sterilize'`)
-3. Update frontend `actionConfig` in batch detail page to reference same config
-4. **Test ONLY:** Sterilization workflow
-
-**Files to Touch:**
-- `lib/baglet-workflow.ts` (add config)
-- `lib/batch-actions.ts` (`updateBatchStatus` function)
-- `app/batches/[id]/page.tsx` (action config object)
-- `app/batches/page.tsx` (if sterilization triggered from list)
+**Impact:**
+- Sterilization workflow now uses centralized config
+- Single source of truth for PREPARED → STERILIZED transition
+- Both backend and frontend share same configuration
+- **Test:** Sterilization workflow (PREPARED → STERILIZED)
 
 ---
 

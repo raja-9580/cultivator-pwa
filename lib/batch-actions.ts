@@ -3,7 +3,7 @@ import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
 import { updateBagletStatus } from './baglet-actions';
-import { INITIAL_BAGLET_STATUS } from './baglet-workflow';
+import { INITIAL_BAGLET_STATUS, STERILIZATION_TRANSITION } from './baglet-workflow';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
@@ -594,8 +594,8 @@ export async function updateBatchStatus(
   let toStatus: string;
 
   if (action === 'sterilize') {
-    fromStatus = 'PREPARED';
-    toStatus = 'STERILIZED';
+    fromStatus = STERILIZATION_TRANSITION.from;
+    toStatus = STERILIZATION_TRANSITION.to;
   } else if (action === 'inoculate') {
     fromStatus = 'STERILIZED';
     toStatus = 'INOCULATED';
