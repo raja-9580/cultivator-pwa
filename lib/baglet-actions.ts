@@ -81,6 +81,8 @@ export interface BagletWithDetails {
   mushroom_name: string;
   strain_code: string;
   substrate_id: string;
+  harvest_count?: number;
+  total_harvest_weight_g?: string;
 }
 
 /**
@@ -129,4 +131,36 @@ export async function getBagletsByBatchAndStatus(
   `;
 
   return await query;
+}
+
+/**
+ * Get single baglet by ID with full details including mushroom type and harvest data
+ * Used by harvest validation and other single-baglet workflows
+ */
+export async function getBagletById(
+  sql: any,
+  bagletId: string
+): Promise<BagletWithDetails | null> {
+  const result = await sql`
+    SELECT 
+      b.batch_id,
+      b.baglet_id,
+      b.baglet_sequence,
+      b.current_status,
+      b.harvest_count,
+      b.total_harvest_weight_g,
+      b.latest_weight_g as weight_in_grams,
+      b.status_updated_at,
+      m.mushroom_name,
+      ba.strain_code,
+      ba.substrate_id
+    FROM baglet b
+    JOIN batch ba ON b.batch_id = ba.batch_id
+    JOIN strain s ON ba.strain_code = s.strain_code
+    JOIN mushroom m ON s.mushroom_id = m.mushroom_id
+    WHERE b.baglet_id = ${bagletId}
+      AND b.is_deleted = FALSE
+  `;
+
+  return result.length > 0 ? result[0] : null;
 }
