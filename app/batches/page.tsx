@@ -16,6 +16,7 @@ import { Batch, BatchDetails } from '@/lib/types';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 import { BATCH_LABELS, BAGLET_LABELS, COMMON_LABELS } from '@/lib/labels';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 
 
@@ -48,6 +49,8 @@ export default function BatchesPage() {
 
 
   const router = useRouter();
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email || 'user@example.com';
 
 
 
@@ -111,7 +114,7 @@ export default function BatchesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          updated_by: 'user@example.com', // TODO: Get from auth session
+          updated_by: userEmail,
         }),
       });
 
@@ -140,6 +143,36 @@ export default function BatchesPage() {
     // Assuming the QR code contains the Baglet ID directly
     router.push(`/baglets?search=${encodeURIComponent(decodedText)}`);
   };
+
+  async function handleAddBaglet(batchId: string) {
+    // Get batch to show current count
+    const batch = batches.find(b => b.id === batchId);
+    const currentCount = batch?.actualBagletCount ?? 0;
+
+    const confirmed = window.confirm(
+      `Found extra material?\n\nThis will add 1 new baglet to Batch ${batchId}.\nCurrent Count: ${currentCount} -> New Count: ${currentCount + 1}`
+    );
+    if (!confirmed) return;
+
+    setUpdatingBatch(batchId);
+    try {
+      const res = await fetch(`/api/batches/${batchId}/add-baglet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: userEmail }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      alert(`✅ ${data.message}`);
+      await fetchBatches(); // Refresh the list
+    } catch (error: any) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setUpdatingBatch(null);
+    }
+  }
 
   useEffect(() => {
     fetchBatches();
@@ -216,6 +249,7 @@ export default function BatchesPage() {
             batch={batch}
             onStatusUpdate={handleStatusUpdate}
             onPrepare={handlePrepare}
+            onAddBaglet={handleAddBaglet}
             updatingBatch={updatingBatch}
           />
         ))}
@@ -292,22 +326,27 @@ export default function BatchesPage() {
                           size="sm"
                           className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
                           onClick={() => {
-                            if (window.confirm(`Add extra baglet to ${batch.id}?`)) {
-                              setUpdatingBatch(batch.id);
-                              fetch(`/api/batches/${batch.id}/add-baglet`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ user: 'system' })
+                            const confirmed = window.confirm(
+                              `Found extra material?\n\nThis will add 1 new baglet to Batch ${batch.id}.\nCurrent Count: ${batch.actualBagletCount} -> New Count: ${batch.actualBagletCount + 1}`
+                            );
+                            if (!confirmed) return;
+
+                            setUpdatingBatch(batch.id);
+                            fetch(`/api/batches/${batch.id}/add-baglet`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ user: userEmail })
+                            })
+                              .then(res => {
+                                if (!res.ok) return res.json().then(data => { throw new Error(data.error); });
+                                return res.json();
                               })
-                                .then(res => res.json())
-                                .then(data => {
-                                  if (data.error) throw new Error(data.error);
-                                  alert(`✅ ${data.message}`);
-                                  fetchBatches();
-                                })
-                                .catch(e => alert(`❌ ${e.message}`))
-                                .finally(() => setUpdatingBatch(null));
-                            }
+                              .then(data => {
+                                alert(`✅ ${data.message}`);
+                                fetchBatches();
+                              })
+                              .catch(e => alert(`❌ Error: ${e.message}`))
+                              .finally(() => setUpdatingBatch(null));
                           }}
                           disabled={updatingBatch === batch.id}
                         >

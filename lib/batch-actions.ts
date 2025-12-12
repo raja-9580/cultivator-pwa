@@ -3,6 +3,7 @@ import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
 import { updateBagletStatus } from './baglet-actions';
+import { INITIAL_BAGLET_STATUS } from './baglet-workflow';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
@@ -387,7 +388,6 @@ export async function planBatch(
         bagletId,
         batchId,
         bagletSequence,
-        initialStatus: 'PLANNED',
         notes: 'Initial baglet planning',
         createdBy: created_by,
       });
@@ -444,7 +444,6 @@ interface CreateBagletParams {
   bagletId: string;
   batchId: string;
   bagletSequence: number;
-  initialStatus?: 'PLANNED' | 'STERILIZED' | 'INOCULATED';
   notes?: string;
   createdBy: string;
 }
@@ -464,10 +463,12 @@ async function createBagletWithLog(
     bagletId,
     batchId,
     bagletSequence,
-    initialStatus = 'PLANNED',
     notes = 'Initial baglet planning',
     createdBy
   } = params;
+
+  // Use centralized initial status configuration
+  const initialStatus = INITIAL_BAGLET_STATUS;
 
   // Insert baglet
   await sql`
@@ -551,7 +552,6 @@ export async function addBagletToBatch(
     bagletId: newBagletId,
     batchId,
     bagletSequence: nextSeq,
-    initialStatus: 'PLANNED',
     notes: 'Added extra baglet (Material Surplus)',
     createdBy: user,
   });

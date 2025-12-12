@@ -1,5 +1,11 @@
 import { BagletStatus } from './types';
 
+/**
+ * Initial status for newly created baglets.
+ * Shared configuration for Batch Planning and Ad-hoc Baglet Addition.
+ */
+export const INITIAL_BAGLET_STATUS = BagletStatus.PLANNED;
+
 export const BAGLET_TRANSITIONS: Record<BagletStatus, BagletStatus[]> = {
     [BagletStatus.NONE]: [BagletStatus.PLANNED],
     [BagletStatus.PLANNED]: [BagletStatus.PREPARED, BagletStatus.DELETED],

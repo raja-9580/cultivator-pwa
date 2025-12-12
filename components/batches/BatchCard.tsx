@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { Batch } from '@/lib/types';
-import { BATCH_LABELS } from '@/lib/labels';
+import { BATCH_LABELS, BAGLET_LABELS } from '@/lib/labels';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 
 function formatDate(date: Date | string | null | undefined): string {
@@ -19,10 +19,11 @@ interface BatchCardProps {
     batch: Batch;
     onStatusUpdate: (batchId: string, action: 'sterilize' | 'inoculate') => void;
     onPrepare: (batchId: string) => void;
+    onAddBaglet: (batchId: string) => void;
     updatingBatch: string | null;
 }
 
-export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBatch }: BatchCardProps) {
+export default function BatchCard({ batch, onStatusUpdate, onPrepare, onAddBaglet, updatingBatch }: BatchCardProps) {
     const isUpdating = updatingBatch === batch.id;
 
     // Centralized Workflow Logic
@@ -75,6 +76,19 @@ export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBa
                         disabled={isUpdating}
                     >
                         {isUpdating ? '...' : (stage === 'RESUME' ? BATCH_LABELS.RESUME_PREPARATION : BATCH_LABELS.PREPARE_BATCH)}
+                    </Button>
+                )}
+
+                {/* Add Baglet - Show when PLANNED baglets exist */}
+                {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs px-3 py-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                        onClick={() => onAddBaglet(batch.id)}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? '...' : `➕ ${BAGLET_LABELS.ADD_BAGLET}`}
                     </Button>
                 )}
 
