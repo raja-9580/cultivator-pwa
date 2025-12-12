@@ -12,6 +12,7 @@ import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 import { BATCH_LABELS } from '@/lib/labels';
+import { useSession } from 'next-auth/react';
 
 function formatDate(dateString: string): string {
     if (!dateString) return '—';
@@ -46,6 +47,8 @@ export default function BatchDetailPage() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
     const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
+    const { data: session } = useSession();
+    const userEmail = session?.user?.email || 'user@example.com';
 
     async function fetchBatchDetails() {
         try {
@@ -112,7 +115,7 @@ export default function BatchDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action,
-                    updated_by: 'user@example.com', // TODO: Get from auth session
+                    updated_by: userEmail,
                 }),
             });
 
@@ -266,7 +269,7 @@ export default function BatchDetailPage() {
                                     const res = await fetch(`/api/batches/${batch.id}/add-baglet`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ user: 'user@example.com' }), // TODO: Real auth
+                                        body: JSON.stringify({ user: userEmail }),
                                     });
 
                                     const data = await res.json();
