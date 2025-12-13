@@ -1,7 +1,7 @@
 # Tech Debt Refactor Revert & Feature Plan
 
 **Date:** 2025-12-12  
-**Status:** In Progress (Tasks 1, 2, 4 & 5 ✅ Complete)
+**Status:** In Progress (Tasks 1, 2, 4, 5 & 6 ✅ Complete)
 
 This report details the reversion of the "Hardcoded Batch Workflow Transitions" refactor. We have reverted to a clean state. Going forward, we will refactor the code **one business feature at a time** to ensure stability and testability.
 
@@ -97,36 +97,48 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 
 ---
 
-### 6. Workflow UI State (Smart Buttons)
-**Current Issue:**
-- Dashboard/Batch Details decide button visibility using hardcoded status string checks
-- Example: `batch.bagletStatusCounts?.['PLANNED']`, `statusCounts['PREPARED']`
+### ✅ Task 6: Workflow UI State (Smart Buttons) - COMPLETE
+**What Changed:**
+- **File:** `lib/baglet-workflow.ts`
+  - Added `getStatusCount` helper function to get count for a specific status
+  - Added `hasStatus` helper function to check if batch has baglets in a specific status
+  - Updated `getBatchWorkflowStage` to use `INITIAL_BAGLET_STATUS`, `STERILIZATION_TRANSITION.from`, and `INOCULATION_TRANSITION.from` instead of hardcoded strings
 
-**Refactor Approach:**
-- This depends on Tasks 3-5 being complete (needs transition configs)
-- Already has `getBatchWorkflowStage` helper, but individual status checks are still hardcoded
-- Create additional helpers if needed or update existing checks to use transition configs
-- **Test:** All batch action buttons display correctly
+- **File:** `app/batches/[id]/page.tsx` (Batch Detail Page)
+  - Updated import to include `getStatusCount` and `INITIAL_BAGLET_STATUS`
+  - Replaced `batch.bagletStatusCounts?.['PREPARED']` with `getStatusCount(batch.bagletStatusCounts, STERILIZATION_TRANSITION.from)` (line 217)
+  - Replaced `batch.bagletStatusCounts?.['STERILIZED']` with `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.from)` (line 226)
+  - Replaced `batch.bagletStatusCounts?.['INOCULATED']` checks with `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)` (lines 238, 248)
+  - Replaced `batch.bagletStatusCounts?.['PLANNED']` with `getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS)` (line 257)
 
-**Files to Touch:**
-- `lib/baglet-workflow.ts` (potentially add helpers)
-- `app/batches/[id]/page.tsx` (status count checks)
-- `app/batches/page.tsx` (status count checks)
+- **File:** `app/batches/page.tsx` (Batch List Page)
+  - Updated import to include `BATCH_ACTIONS`, `INITIAL_BAGLET_STATUS`, `INOCULATION_TRANSITION`, and `getStatusCount`
+  - Updated `handleStatusUpdate` to use `BATCH_ACTIONS[action]` mapping instead of hardcoded if/else (lines 89-92)
+  - Replaced hardcoded 'PLANNED' check with `getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS)` (line 323)
+  - Replaced hardcoded 'INOCULATED' checks with `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)` (lines 399, 408)
+
+**Impact:**
+- All UI button visibility logic now uses centralized configuration
+- Helper functions provide consistent, type-safe access to status counts
+- Eliminated ~12 instances of hardcoded status strings across UI code
+- Single source of truth for all status transitions
+- **Test:** Verify all batch action buttons (Prepare, Sterilize, Inoculate, Add Baglet, Export Labels) display correctly based on batch state
+
 
 ---
 
 ## Execution Order
 
 1. ✅ **Tasks 1 & 2** - Initial Status (shared helper refactor) - COMPLETE
-2. **Task 3** - Preparation workflow (PLANNED → PREPARED) - Individual operation
-3. **Task 4** - Sterilization (PREPARED → STERILIZED) - Bulk operation
-4. **Task 5** - Inoculation (STERILIZED → INOCULATED) - Bulk operation
-5. **Task 6** - UI Smart Buttons (depends on 3, 4, 5)
+2. **Task 3** - Preparation workflow (PLANNED → PREPARED) - Individual operation - TODO
+3. ✅ **Task 4** - Sterilization (PREPARED → STERILIZED) - Bulk operation - COMPLETE
+4. ✅ **Task 5** - Inoculation (STERILIZED → INOCULATED) - Bulk operation - COMPLETE
+5. ✅ **Task 6** - UI Smart Buttons (depends on 3, 4, 5) - COMPLETE
 
 **Dependency Reasoning:**
 - Task 3 comes before 4 & 5 because preparation must happen before sterilization
 - Tasks 4 & 5 are similar patterns (bulk operations) but kept separate for clean testing
-- Task 6 depends on all transition configs being defined
+- Task 6 depended on transition configs being defined (Tasks 4 & 5 complete, Task 3 still uses hardcoded value but doesn't block Task 6)
 
 ---
 
@@ -134,64 +146,36 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 
 ### 📍 Batch List Page (`app/batches/page.tsx`)
 
-**Lines 90-92** - `handleStatusUpdate` function:
-```typescript
-const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-const currentStatus = action === 'sterilize' ? 'PREPARED' : 'STERILIZED';
-```
-**Fix:** Use `BATCH_ACTIONS[action].to` and `BATCH_ACTIONS[action].from` from centralized config
+**Lines 90-92** - ~~`handleStatusUpdate` function~~ ✅ FIXED in Task 6:
+- Now uses `BATCH_ACTIONS[action].to` and `BATCH_ACTIONS[action].from`
 
-**Line 323** - Add Baglet button visibility:
-```typescript
-{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
-```
-**Fix:** Create helper like `hasStatusCount(statusCounts, INITIAL_BAGLET_STATUS)`
+**Line 323** - ~~Add Baglet button visibility~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS)`
 
-**Line 399** - Export Labels button visibility:
-```typescript
-{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
-```
-**Fix:** Use `INOCULATION_TRANSITION.to` or create helper `hasInoculatedBaglets(statusCounts)`
+**Line 399** - ~~Export Labels button visibility~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)`
 
-**Line 408** - Export button label:
-```typescript
-📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
-```
-**Fix:** Same as above
+**Line 408** - ~~Export button label~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)`
 
 ---
 
 ### 📍 Batch Detail Page (`app/batches/[id]/page.tsx`)
 
-**Line 217** - Prepared count for Sterilize button:
-```typescript
-const preparedCount = batch.bagletStatusCounts?.['PREPARED'] ?? 0;
-```
-**Fix:** Use `STERILIZATION_TRANSITION.from`
+**Line 217** - ~~Prepared count for Sterilize button~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, STERILIZATION_TRANSITION.from)`
 
-**Line 226** - Sterilized count for Inoculate button:
-```typescript
-const sterilizedCount = batch.bagletStatusCounts?.['STERILIZED'] ?? 0;
-```
-**Fix:** Use `INOCULATION_TRANSITION.from`
+**Line 226** - ~~Sterilized count for Inoculate button~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.from)`
 
-**Line 238** - Export Labels visibility:
-```typescript
-{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
-```
-**Fix:** Use `INOCULATION_TRANSITION.to`
+**Line 238** - ~~Export Labels visibility~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)`
 
-**Line 248** - Export Labels count display:
-```typescript
-<span>Export Labels ({batch.bagletStatusCounts['INOCULATED']})</span>
-```
-**Fix:** Use `INOCULATION_TRANSITION.to`
+**Line 248** - ~~Export Labels count display~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)`
 
-**Line 257** - Add Baglet button visibility:
-```typescript
-{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
-```
-**Fix:** Use `INITIAL_BAGLET_STATUS`
+**Line 257** - ~~Add Baglet button visibility~~ ✅ FIXED in Task 6:
+- Now uses `getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS)`
 
 ---
 
@@ -217,9 +201,9 @@ const sterilized = statusCounts['STERILIZED'] ?? 0;
 
 ---
 
-## Recommended Helper Functions
+## ✅ Recommended Helper Functions (IMPLEMENTED in Task 6)
 
-To eliminate UI hardcoded strings, consider adding these helpers to `lib/baglet-workflow.ts`:
+The following helper functions were added to `lib/baglet-workflow.ts` in Task 6:
 
 ```typescript
 // Get count for a specific status
@@ -239,7 +223,7 @@ export function hasStatus(
 }
 ```
 
-These helpers would centralize the pattern and make UI code cleaner.
+These helpers have been integrated throughout the UI code to eliminate hardcoded status strings.
 
 ---
 

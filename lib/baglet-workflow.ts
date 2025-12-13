@@ -124,15 +124,37 @@ export function getActiveItemCount(statusCounts: Record<string, number>): number
 export type BatchStage = 'PREPARE' | 'RESUME' | 'STERILIZE' | 'INOCULATE' | 'NONE';
 
 /**
+ * Get count for a specific status from a status counts map.
+ * Returns 0 if statusCounts is undefined or status is not found.
+ */
+export function getStatusCount(
+    statusCounts: Record<string, number> | undefined,
+    status: BagletStatus
+): number {
+    return statusCounts?.[status] ?? 0;
+}
+
+/**
+ * Check if batch has baglets in a specific status.
+ * Returns true if count > 0.
+ */
+export function hasStatus(
+    statusCounts: Record<string, number> | undefined,
+    status: BagletStatus
+): boolean {
+    return getStatusCount(statusCounts, status) > 0;
+}
+
+/**
  * Determines the current workflow stage for a batch based on its baglet status counts.
  * This effectively implements the "Strict Phase Gate" logic centrally.
  */
 export function getBatchWorkflowStage(statusCounts: Record<string, number> | undefined): BatchStage {
     if (!statusCounts) return 'NONE';
 
-    const planned = statusCounts['PLANNED'] ?? 0;
-    const prepared = statusCounts['PREPARED'] ?? 0;
-    const sterilized = statusCounts['STERILIZED'] ?? 0;
+    const planned = getStatusCount(statusCounts, INITIAL_BAGLET_STATUS);
+    const prepared = getStatusCount(statusCounts, STERILIZATION_TRANSITION.from);
+    const sterilized = getStatusCount(statusCounts, INOCULATION_TRANSITION.from);
 
     // Phase 1: Preparation (Gate: Must clear all PLANNED)
     if (planned > 0) {
