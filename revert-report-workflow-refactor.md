@@ -1,7 +1,7 @@
 # Tech Debt Refactor Revert & Feature Plan
 
 **Date:** 2025-12-12  
-**Status:** In Progress (Tasks 1 & 2 ✅ Complete)
+**Status:** In Progress (Tasks 1, 2, 4 & 5 ✅ Complete)
 
 This report details the reversion of the "Hardcoded Batch Workflow Transitions" refactor. We have reverted to a clean state. Going forward, we will refactor the code **one business feature at a time** to ensure stability and testability.
 
@@ -59,52 +59,41 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 
 ---
 
-### 4. Batch Sterilization (Bulk Action: PREPARED → STERILIZED)
-**Current Issue:**
-- **Backend:** `updateBatchStatus` hardcodes `'PREPARED'` → `'STERILIZED'` transition
-- **Frontend:** Sterilize button/modal hardcode same status strings in action config (line 82-86)
+### ✅ Task 4: Batch Sterilization (Bulk Action: PREPARED → STERILIZED) - COMPLETE
+**What Changed:**
+- **File:** `lib/baglet-workflow.ts`
+  - Added `STERILIZATION_TRANSITION` constant with `from: PREPARED` and `to: STERILIZED`
+- **File:** `lib/batch-actions.ts`
+  - Updated `updateBatchStatus` function to use `STERILIZATION_TRANSITION.from` and `STERILIZATION_TRANSITION.to`
+  - Removed hardcoded `'PREPARED'` and `'STERILIZED'` strings
+- **File:** `app/batches/[id]/page.tsx`
+  - Updated `actionConfig` for sterilize action to use `STERILIZATION_TRANSITION`
+  - Removed hardcoded status strings from frontend
 
-**Refactor Approach:**
-1. Create centralized sterilization config in `lib/baglet-workflow.ts`:
-   ```typescript
-   export const STERILIZATION_TRANSITION = {
-     from: BagletStatus.PREPARED,
-     to: BagletStatus.STERILIZED,
-   };
-   ```
-2. Update `updateBatchStatus` to use config (when `action === 'sterilize'`)
-3. Update frontend `actionConfig` in batch detail page to reference same config
-4. **Test ONLY:** Sterilization workflow
-
-**Files to Touch:**
-- `lib/baglet-workflow.ts` (add config)
-- `lib/batch-actions.ts` (`updateBatchStatus` function)
-- `app/batches/[id]/page.tsx` (action config object)
-- `app/batches/page.tsx` (if sterilization triggered from list)
+**Impact:**
+- Sterilization workflow now uses centralized config
+- Single source of truth for PREPARED → STERILIZED transition
+- Both backend and frontend share same configuration
+- **Test:** Sterilization workflow (PREPARED → STERILIZED)
 
 ---
 
-### 5. Batch Inoculation (Bulk Action: STERILIZED → INOCULATED)
-**Current Issue:**
-- Similar to sterilization: `'STERILIZED'` → `'INOCULATED'` hardcoded in multiple places
+### ✅ Task 5: Batch Inoculation (Bulk Action: STERILIZED → INOCULATED) - COMPLETE
+**What Changed:**
+- **File:** `lib/baglet-workflow.ts`
+  - Added `INOCULATION_TRANSITION` constant with `from: STERILIZED` and `to: INOCULATED`
+- **File:** `lib/batch-actions.ts`
+  - Updated `updateBatchStatus` function to use `INOCULATION_TRANSITION.from` and `INOCULATION_TRANSITION.to`
+  - Removed hardcoded `'STERILIZED'` and `'INOCULATED'` strings
+- **File:** `app/batches/[id]/page.tsx`
+  - Updated `actionConfig` for inoculate action to use `INOCULATION_TRANSITION`
+  - Removed hardcoded status strings from frontend
 
-**Refactor Approach:**
-1. Add to `lib/baglet-workflow.ts`:
-   ```typescript
-   export const INOCULATION_TRANSITION = {
-     from: BagletStatus.STERILIZED,
-     to: BagletStatus.INOCULATED,
-   };
-   ```
-2. Update `updateBatchStatus` 
-3. Update frontend components
-4. **Test ONLY:** Inoculation workflow
-
-**Files to Touch:**
-- `lib/baglet-workflow.ts` (add config)
-- `lib/batch-actions.ts` (`updateBatchStatus` function)
-- `app/batches/[id]/page.tsx` (action config object)
-- `app/batches/page.tsx` (if inoculation triggered from list)
+**Impact:**
+- Inoculation workflow now uses centralized config
+- Single source of truth for STERILIZED → INOCULATED transition
+- Both backend and frontend share same configuration
+- **Test:** Inoculation workflow (STERILIZED → INOCULATED)
 
 ---
 
@@ -138,5 +127,120 @@ This report details the reversion of the "Hardcoded Batch Workflow Transitions" 
 - Task 3 comes before 4 & 5 because preparation must happen before sterilization
 - Tasks 4 & 5 are similar patterns (bulk operations) but kept separate for clean testing
 - Task 6 depends on all transition configs being defined
+
+---
+
+## Additional Hardcoded Patterns (Fix When Time Permits)
+
+### 📍 Batch List Page (`app/batches/page.tsx`)
+
+**Lines 90-92** - `handleStatusUpdate` function:
+```typescript
+const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
+const currentStatus = action === 'sterilize' ? 'PREPARED' : 'STERILIZED';
+```
+**Fix:** Use `BATCH_ACTIONS[action].to` and `BATCH_ACTIONS[action].from` from centralized config
+
+**Line 323** - Add Baglet button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+```
+**Fix:** Create helper like `hasStatusCount(statusCounts, INITIAL_BAGLET_STATUS)`
+
+**Line 399** - Export Labels button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INOCULATION_TRANSITION.to` or create helper `hasInoculatedBaglets(statusCounts)`
+
+**Line 408** - Export button label:
+```typescript
+📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
+```
+**Fix:** Same as above
+
+---
+
+### 📍 Batch Detail Page (`app/batches/[id]/page.tsx`)
+
+**Line 217** - Prepared count for Sterilize button:
+```typescript
+const preparedCount = batch.bagletStatusCounts?.['PREPARED'] ?? 0;
+```
+**Fix:** Use `STERILIZATION_TRANSITION.from`
+
+**Line 226** - Sterilized count for Inoculate button:
+```typescript
+const sterilizedCount = batch.bagletStatusCounts?.['STERILIZED'] ?? 0;
+```
+**Fix:** Use `INOCULATION_TRANSITION.from`
+
+**Line 238** - Export Labels visibility:
+```typescript
+{(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INOCULATION_TRANSITION.to`
+
+**Line 248** - Export Labels count display:
+```typescript
+<span>Export Labels ({batch.bagletStatusCounts['INOCULATED']})</span>
+```
+**Fix:** Use `INOCULATION_TRANSITION.to`
+
+**Line 257** - Add Baglet button visibility:
+```typescript
+{(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+```
+**Fix:** Use `INITIAL_BAGLET_STATUS`
+
+---
+
+### 📍 Prepare Batch Modal (`components/batches/PrepareBatchModal.tsx`)
+
+**Line 168** - Status transition:
+```typescript
+newStatus: 'PREPARED',
+```
+**Fix:** Create `PREPARATION_TRANSITION` config (Task 3)
+
+---
+
+### 📍 Workflow Configuration (`lib/baglet-workflow.ts`)
+
+**Lines 106-108** - Status checks in `getBatchWorkflowStage`:
+```typescript
+const planned = statusCounts['PLANNED'] ?? 0;
+const prepared = statusCounts['PREPARED'] ?? 0;
+const sterilized = statusCounts['STERILIZED'] ?? 0;
+```
+**Fix:** Use centralized transition configs instead of hardcoded strings
+
+---
+
+## Recommended Helper Functions
+
+To eliminate UI hardcoded strings, consider adding these helpers to `lib/baglet-workflow.ts`:
+
+```typescript
+// Get count for a specific status
+export function getStatusCount(
+  statusCounts: Record<string, number> | undefined, 
+  status: BagletStatus
+): number {
+  return statusCounts?.[status] ?? 0;
+}
+
+// Check if batch has baglets in specific status
+export function hasStatus(
+  statusCounts: Record<string, number> | undefined,
+  status: BagletStatus
+): boolean {
+  return getStatusCount(statusCounts, status) > 0;
+}
+```
+
+These helpers would centralize the pattern and make UI code cleaner.
+
+---
 
 

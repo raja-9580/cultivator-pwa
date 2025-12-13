@@ -10,7 +10,7 @@ import BagletsList from '@/components/batches/BagletsList';
 
 import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
-import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
+import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION } from '@/lib/baglet-workflow';
 import { BATCH_LABELS } from '@/lib/labels';
 import { useSession } from 'next-auth/react';
 
@@ -84,13 +84,13 @@ export default function BatchDetailPage() {
         // Action configuration mapping
         const actionConfig = {
             sterilize: {
-                targetStatus: 'STERILIZED',
-                currentStatus: 'PREPARED',
+                targetStatus: STERILIZATION_TRANSITION.to,
+                currentStatus: STERILIZATION_TRANSITION.from,
                 successMessage: BATCH_LABELS.STERILIZATION_COMPLETE,
             },
             inoculate: {
-                targetStatus: 'INOCULATED',
-                currentStatus: 'STERILIZED',
+                targetStatus: INOCULATION_TRANSITION.to,
+                currentStatus: INOCULATION_TRANSITION.from,
                 successMessage: BATCH_LABELS.INOCULATION_COMPLETE,
             },
         }[action];

@@ -6,6 +6,33 @@ import { BagletStatus } from './types';
  */
 export const INITIAL_BAGLET_STATUS = BagletStatus.PLANNED;
 
+/**
+ * Sterilization transition configuration for bulk batch operations.
+ * Used by both backend (updateBatchStatus) and frontend (batch detail page).
+ */
+export const STERILIZATION_TRANSITION = {
+    from: BagletStatus.PREPARED,
+    to: BagletStatus.STERILIZED,
+};
+
+/**
+ * Inoculation transition configuration for bulk batch operations.
+ * Used by both backend (updateBatchStatus) and frontend (batch detail page).
+ */
+export const INOCULATION_TRANSITION = {
+    from: BagletStatus.STERILIZED,
+    to: BagletStatus.INOCULATED,
+};
+
+/**
+ * Centralized mapping of bulk batch actions to their status transitions.
+ * This eliminates the need for if/else ladders in the backend.
+ */
+export const BATCH_ACTIONS = {
+    sterilize: STERILIZATION_TRANSITION,
+    inoculate: INOCULATION_TRANSITION,
+} as const;
+
 export const BAGLET_TRANSITIONS: Record<BagletStatus, BagletStatus[]> = {
     [BagletStatus.NONE]: [BagletStatus.PLANNED],
     [BagletStatus.PLANNED]: [BagletStatus.PREPARED, BagletStatus.DELETED],
