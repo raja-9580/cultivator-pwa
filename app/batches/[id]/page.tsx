@@ -10,7 +10,7 @@ import BagletsList from '@/components/batches/BagletsList';
 
 import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import { BatchDetails } from '@/lib/types';
-import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION } from '@/lib/baglet-workflow';
+import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION, INITIAL_BAGLET_STATUS, getStatusCount } from '@/lib/baglet-workflow';
 import { BATCH_LABELS } from '@/lib/labels';
 import { useSession } from 'next-auth/react';
 
@@ -214,7 +214,7 @@ export default function BatchDetailPage() {
                             );
                         }
                         if (stage === 'STERILIZE') {
-                            const preparedCount = batch.bagletStatusCounts?.['PREPARED'] ?? 0;
+                            const preparedCount = getStatusCount(batch.bagletStatusCounts, STERILIZATION_TRANSITION.from);
                             return (
                                 <Button variant="primary" size="sm" onClick={() => handleStatusUpdate('sterilize')} disabled={updatingStatus} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white border-none">
                                     <span className="text-lg">🔥</span>
@@ -223,7 +223,7 @@ export default function BatchDetailPage() {
                             );
                         }
                         if (stage === 'INOCULATE') {
-                            const sterilizedCount = batch.bagletStatusCounts?.['STERILIZED'] ?? 0;
+                            const sterilizedCount = getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.from);
                             return (
                                 <Button variant="primary" size="sm" onClick={() => handleStatusUpdate('inoculate')} disabled={updatingStatus} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none">
                                     <span className="text-lg">💉</span>
@@ -235,7 +235,7 @@ export default function BatchDetailPage() {
                     })()}
 
                     {/* Export Labels for QR Printing - Show when inoculated baglets exist */}
-                    {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+                    {getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to) > 0 && (
                         <Button
                             variant="secondary"
                             size="sm"
@@ -245,7 +245,7 @@ export default function BatchDetailPage() {
                             className="flex items-center gap-2 border-green-500/30 hover:bg-green-500/10 text-green-400"
                         >
                             <span className="text-lg">📊</span>
-                            <span>Export Labels ({batch.bagletStatusCounts['INOCULATED']})</span>
+                            <span>Export Labels ({getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)})</span>
                         </Button>
                     )}
 
@@ -254,7 +254,7 @@ export default function BatchDetailPage() {
 
                     {/* Add Extra Baglet - Manual Override for Surplus Material */}
                     {/* "display when all baglet is prepared stat" (PLANNED) */}
-                    {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                    {getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS) > 0 && (
                         <Button
                             variant="secondary"
                             size="sm"

@@ -13,7 +13,7 @@ import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
 import BatchCard from '@/components/batches/BatchCard';
 import QrScanner from '@/components/ui/QrScanner';
 import { Batch, BatchDetails } from '@/lib/types';
-import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
+import { getBatchWorkflowStage, BATCH_ACTIONS, INITIAL_BAGLET_STATUS, INOCULATION_TRANSITION, getStatusCount } from '@/lib/baglet-workflow';
 import { BATCH_LABELS, BAGLET_LABELS, COMMON_LABELS } from '@/lib/labels';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -87,9 +87,9 @@ export default function BatchesPage() {
   }
 
   async function handleStatusUpdate(batchId: string, action: 'sterilize' | 'inoculate') {
-    const actionName = action === 'sterilize' ? 'STERILIZED' : 'INOCULATED';
-    // Workflow Update: Sterilization now happens AFTER Preparation
-    const currentStatus = action === 'sterilize' ? 'PREPARED' : 'STERILIZED';
+    const transition = BATCH_ACTIONS[action];
+    const actionName = transition.to;
+    const currentStatus = transition.from;
 
     // Find the batch to get the count
     const batch = batches.find(b => b.id === batchId);
@@ -320,7 +320,7 @@ export default function BatchesPage() {
 
 
                       {/* Add Baglet - Initial Stage */}
-                      {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
+                      {getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS) > 0 && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -396,7 +396,7 @@ export default function BatchesPage() {
                       )}
 
                       {/* Export Labels - Show when inoculated baglets exist */}
-                      {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
+                      {getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to) > 0 && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -405,7 +405,7 @@ export default function BatchesPage() {
                             window.location.href = `/api/batches/${batch.id}/export-labels`;
                           }}
                         >
-                          📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
+                          📊 Export ({getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to)})
                         </Button>
                       )}
 
