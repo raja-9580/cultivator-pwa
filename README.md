@@ -1,6 +1,6 @@
 # Cultivator
 
-Mushroom cultivation internal tool built with Next.js, TypeScript, and Tailwind CSS.
+Mushroom cultivation internal tool built with Next.js, TypeScript, and Tailwind CSS..
 
 ## Getting Started
 
