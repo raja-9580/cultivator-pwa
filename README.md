@@ -1,38 +1,78 @@
-# Cultivator
+# Cultivator 🍄
 
-Mushroom cultivation internal tool built with Next.js, TypeScript, and Tailwind CSS.
+**Cultivator** is a private, internal operational tool built for managing mushroom farm production cycles. It allows farm staff to track batches from sterilization to harvest, ensuring full traceability and replacing manual logbooks with a strictly defined digital workflow.
 
-## Getting Started
+## 🛠️ Stack & Architecture
+*(See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for deep-dive on decisions, costs, and limits)*
 
-```bash
-npm install
-npm run dev
-```
+*   **Frontend**: Next.js 14 (App Router)
+*   **Database**: PostgreSQL (Neon Serverless)
+*   **Access**: Raw SQL (via `pg` + `dotenv`)
+*   **Auth**: NextAuth.js (Google OAuth)
+*   **Styling**: Tailwind CSS
+*   **PWA**: `next-pwa` (Offline-first capable)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📂 Project Structure & Organization
 
-## Project Structure
+We follow a "Feature-First" organization to keep related code together:
 
-- `app/` - Next.js App Router pages and API routes
-- `components/` - React components
-- `lib/` - Utilities, types, and mock data
-- `public/` - Static assets
+*   **`app/`**: **Routing & Pages**.
+    *   *Why?* Next.js 13+ uses file-system routing. We keep page logic thin here.
+    *   **`api/`**: **Backend Endpoints**. Handles all DB interactions securely.
+*   **`components/`**: **UI Building Blocks**.
+    *   *Why?* Separates "How it looks" from "How it works".
+    *   **`AuthProvider.tsx`**: **Critical**. Wraps the app to handle user sessions (Real vs Mock).
+*   **`lib/`**: **Business Logic (The "Brain")**.
+    *   *Why?* We allow UI components (`components/`) to import logic, but logic never imports UI. This prevents circular dependencies and makes testing math/transformations easy.
+    *   `batch-logic.ts`, `constants.ts`: Pure functions.
 
-## Environment Variables
+## 💻 Local Development
 
-Create a `.env.local` file:
+1.  **Setup Environment**:
+    Create `.env` with:
+    ```properties
+    # Database (Required)
+    DATABASE_URL=postgresql://...
+    
+    # Auth & Mocking
+    NEXT_PUBLIC_MOCK_AUTH=true
+    NEXTAUTH_SECRET=dev-secret-123
+    ```
 
-```
-DATABASE_URL=postgresql://...  # Neon serverless PostgreSQL (TODO)
-```
+2.  **Run Server**:
+    ```bash
+    npm run dev
+    ```
 
-## Features
+3.  **Open**: [http://localhost:3000](http://localhost:3000) (Auto-logged in).
 
-- Dashboard with KPI cards and recent activity
-- Batch management with filtering
-- Baglet list view and tracking
-- Placeholder pages for Metrics, Harvest, Status Logger, Reports
-- QR code generation for batches (placeholder)
-- Dark theme optimized for farm environments
-- Mobile-responsive design
-- PWA-ready scaffolding
+## 📱 Mobile Testing (HTTPS via Cloudflare)
+
+1.  **Start Tunnel**:
+    Run this command (**No installation, account, or login required**):
+    ```bash
+    npx cloudflared tunnel --url http://localhost:3000
+    ```
+    *   *The first time you run this, press 'y' to install the temporary runner.*
+    *   Copy the URL ending in `.trycloudflare.com`.
+
+2.  **Update Config**:
+    In your `.env`:
+    ```properties
+    NEXT_PUBLIC_MOCK_AUTH=true
+    NEXTAUTH_SECRET=dev-secret-123
+    NEXTAUTH_URL=https://<your-url>.trycloudflare.com  <-- PASTE HERE
+    ```
+
+3.  **Restart Server**:
+    Kill `npm run dev` and start it again.
+
+4.  **Test on Mobile**:
+    *   Visit the `.trycloudflare.com` link on your phone.
+    *   You will be auto-logged in.
+    *   Camera/Scanner will work (HTTPS).
+
+## 🚀 Deployment
+
+For production deployment instructions (specifically for Vercel + Neon DB), please refer to the deployment guide:
+👉 **[Deployment Guide](docs/DEPLOYMENT.md)**
