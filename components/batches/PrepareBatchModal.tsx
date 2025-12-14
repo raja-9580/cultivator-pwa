@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { BatchDetails } from '@/lib/types';
-import { isBagletActive } from '@/lib/baglet-workflow';
+import { isBagletActive, PREPARATION_TRANSITION } from '@/lib/baglet-workflow';
 import { COMMON_LABELS } from '@/lib/labels';
 
 interface PrepareBatchModalProps {
@@ -58,7 +58,7 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
         if (isOpen && batch && batch.baglets) {
             // Find all baglets that are PLANNED or PREPARED (for editing)
             const editable = batch.baglets.filter(b =>
-                (b.status === 'PLANNED' || b.status === 'PREPARED') && isBagletActive(b.status)
+                (b.status === PREPARATION_TRANSITION.from || b.status === PREPARATION_TRANSITION.to) && isBagletActive(b.status)
             );
             setEligibleBaglets(editable);
 
@@ -130,7 +130,7 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
         if (!currentBaglet) return;
 
         // If already PREPARED, just move to next (readonly mode)
-        if (currentBaglet.status === 'PREPARED') {
+        if (currentBaglet.status === PREPARATION_TRANSITION.to) {
             if (currentIndex < eligibleBaglets.length - 1) {
                 setCurrentIndex(prev => prev + 1);
             } else {
@@ -165,7 +165,7 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    newStatus: 'PREPARED',
+                    newStatus: PREPARATION_TRANSITION.to,
                     notes: 'Batch Preparation: Metrics logged',
                 }),
             });
@@ -251,7 +251,7 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                             {currentBaglet && (
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
                                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">
-                                        Current Baglet {currentBaglet.status === 'PREPARED' && <span className="ml-2 text-accent-leaf">(Already Prepared - View Only)</span>}
+                                        Current Baglet {currentBaglet.status === PREPARATION_TRANSITION.to && <span className="ml-2 text-accent-leaf">(Already Prepared - View Only)</span>}
                                     </div>
                                     <div className="text-xl font-mono text-white tracking-tight">
                                         {currentBaglet.id}
@@ -267,28 +267,28 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                                     onChange={setWeight}
                                     placeholder="0.0"
                                     autoFocus
-                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                    readOnly={currentBaglet?.status === PREPARATION_TRANSITION.to}
                                 />
                                 <InputGroup
                                     label="pH Level"
                                     value={ph}
                                     onChange={setPh}
                                     placeholder="0.0"
-                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                    readOnly={currentBaglet?.status === PREPARATION_TRANSITION.to}
                                 />
                                 <InputGroup
                                     label="Temp (°C)"
                                     value={temperature}
                                     onChange={setTemperature}
                                     placeholder="0.0"
-                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                    readOnly={currentBaglet?.status === PREPARATION_TRANSITION.to}
                                 />
                                 <InputGroup
                                     label="Humidity (%)"
                                     value={humidity}
                                     onChange={setHumidity}
                                     placeholder="0.0"
-                                    readOnly={currentBaglet?.status === 'PREPARED'}
+                                    readOnly={currentBaglet?.status === PREPARATION_TRANSITION.to}
                                 />
                             </div>
 
@@ -312,10 +312,10 @@ export default function PrepareBatchModal({ isOpen, onClose, batch, onUpdate }: 
                                 <Button
                                     variant="primary"
                                     onClick={handleSaveAndNext}
-                                    disabled={currentBaglet?.status === 'PLANNED' && (saving || !weight || !temperature || !humidity || !ph)}
+                                    disabled={currentBaglet?.status === PREPARATION_TRANSITION.from && (saving || !weight || !temperature || !humidity || !ph)}
                                     className="flex-[2]"
                                 >
-                                    {currentBaglet?.status === 'PREPARED'
+                                    {currentBaglet?.status === PREPARATION_TRANSITION.to
                                         ? (currentIndex === eligibleBaglets.length - 1 ? 'Finish' : 'Next')
                                         : (saving ? 'Saving...' : (currentIndex === eligibleBaglets.length - 1 ? 'Finish' : 'Save & Next'))
                                     }
@@ -376,8 +376,8 @@ function InputGroup({ label, value, onChange, placeholder, autoFocus, readOnly }
                 autoFocus={autoFocus}
                 readOnly={readOnly}
                 className={`w-full border rounded-lg px-3 py-2.5 font-mono focus:outline-none transition-colors ${readOnly
-                        ? 'bg-white/5 border-white/10 text-gray-400 cursor-not-allowed'
-                        : 'bg-white/5 border-white/10 text-white focus:border-accent-leaf/50'
+                    ? 'bg-white/5 border-white/10 text-gray-400 cursor-not-allowed'
+                    : 'bg-white/5 border-white/10 text-white focus:border-accent-leaf/50'
                     }`}
             />
         </div>

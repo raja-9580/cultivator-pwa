@@ -7,6 +7,15 @@ import { BagletStatus } from './types';
 export const INITIAL_BAGLET_STATUS = BagletStatus.PLANNED;
 
 /**
+ * Preparation transition configuration for single baglet operations.
+ * Used by frontend (PrepareBatchModal).
+ */
+export const PREPARATION_TRANSITION = {
+    from: BagletStatus.PLANNED,
+    to: BagletStatus.PREPARED,
+};
+
+/**
  * Sterilization transition configuration for bulk batch operations.
  * Used by both backend (updateBatchStatus) and frontend (batch detail page).
  */
