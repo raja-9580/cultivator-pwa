@@ -8,7 +8,7 @@ export const INITIAL_BAGLET_STATUS = BagletStatus.PLANNED;
 
 /**
  * Preparation transition configuration for single baglet operations.
- * Used by frontend (PrepareBatchModal).
+ * Used by frontend (BatchPreparationGrid).
  */
 export const PREPARATION_TRANSITION = {
     from: BagletStatus.PLANNED,

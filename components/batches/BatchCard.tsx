@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { Batch } from '@/lib/types';
-import { BATCH_LABELS, BAGLET_LABELS } from '@/lib/labels';
+import { BATCH_LABELS } from '@/lib/labels';
 import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
 
 function formatDate(date: Date | string | null | undefined): string {
@@ -19,11 +19,10 @@ interface BatchCardProps {
     batch: Batch;
     onStatusUpdate: (batchId: string, action: 'sterilize' | 'inoculate') => void;
     onPrepare: (batchId: string) => void;
-    onAddBaglet: (batchId: string) => void;
     updatingBatch: string | null;
 }
 
-export default function BatchCard({ batch, onStatusUpdate, onPrepare, onAddBaglet, updatingBatch }: BatchCardProps) {
+export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBatch }: BatchCardProps) {
     const isUpdating = updatingBatch === batch.id;
 
     // Centralized Workflow Logic
@@ -60,12 +59,7 @@ export default function BatchCard({ batch, onStatusUpdate, onPrepare, onAddBagle
 
             {/* Actions */}
             <div className="flex gap-2 flex-wrap">
-                <Link
-                    href={`/batches/${batch.id}`}
-                    className="flex-1 min-w-[100px] text-center bg-gray-800/40 hover:bg-gray-800/60 text-gray-200 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-                >
-                    View Details
-                </Link>
+
 
                 {(stage === 'PREPARE' || stage === 'RESUME') && (
                     <Button
@@ -79,18 +73,7 @@ export default function BatchCard({ batch, onStatusUpdate, onPrepare, onAddBagle
                     </Button>
                 )}
 
-                {/* Add Baglet - Show when PLANNED baglets exist */}
-                {(batch.bagletStatusCounts?.['PLANNED'] ?? 0) > 0 && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs px-3 py-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                        onClick={() => onAddBaglet(batch.id)}
-                        disabled={isUpdating}
-                    >
-                        {isUpdating ? '...' : `➕ ${BAGLET_LABELS.ADD_BAGLET}`}
-                    </Button>
-                )}
+
 
                 {stage === 'STERILIZE' && (
                     <Button

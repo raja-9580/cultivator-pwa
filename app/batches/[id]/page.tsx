@@ -8,7 +8,7 @@ import SubstrateMix from '@/components/batches/SubstrateMix';
 import BagletStatusDistribution from '@/components/batches/BagletStatusDistribution';
 import BagletsList from '@/components/batches/BagletsList';
 
-import PrepareBatchModal from '@/components/batches/PrepareBatchModal';
+import BatchPreparationGrid from '@/components/batches/BatchPreparationGrid';
 import { BatchDetails } from '@/lib/types';
 import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION, INITIAL_BAGLET_STATUS, getStatusCount } from '@/lib/baglet-workflow';
 import { BATCH_LABELS } from '@/lib/labels';
@@ -52,7 +52,11 @@ export default function BatchDetailPage() {
 
     async function fetchBatchDetails() {
         try {
-            setLoading(true);
+            // Only show full loading spinner on initial load
+            if (!batchDetails) {
+                setLoading(true);
+            }
+
             // Add timestamp to force fresh fetch
             const res = await fetch(`/api/batches/${batchId}?t=${Date.now()}`, {
                 cache: 'no-store',
@@ -207,7 +211,10 @@ export default function BatchDetailPage() {
                         const stage = getBatchWorkflowStage(batch.bagletStatusCounts || {});
                         if (stage === 'PREPARE' || stage === 'RESUME') {
                             return (
-                                <Button variant="primary" size="sm" onClick={() => setIsPrepareModalOpen(true)} className="flex items-center gap-2">
+                                <Button variant="primary" size="sm" onClick={async () => {
+                                    await fetchBatchDetails();
+                                    setIsPrepareModalOpen(true);
+                                }} className="flex items-center gap-2">
                                     <span className="text-lg">🧫</span>
                                     <span>{stage === 'PREPARE' ? BATCH_LABELS.PREPARE_BATCH : BATCH_LABELS.RESUME_PREPARATION}</span>
                                 </Button>
@@ -298,9 +305,9 @@ export default function BatchDetailPage() {
 
 
 
-            {/* Prepare Batch Modal */}
+            {/* Batch Preparation Grid (Redesigned) */}
             {batchDetails && (
-                <PrepareBatchModal
+                <BatchPreparationGrid
                     isOpen={isPrepareModalOpen}
                     onClose={() => setIsPrepareModalOpen(false)}
                     batch={batchDetails}

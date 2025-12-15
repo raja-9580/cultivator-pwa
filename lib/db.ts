@@ -4,10 +4,10 @@ import { neon } from '@neondatabase/serverless';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.warn('DATABASE_URL is not set. Database queries will fail.');
+  throw new Error('DATABASE_URL must be set in environment variables');
 }
 
 // Create SQL client
-export const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
+export const sql = neon(DATABASE_URL);
 
 export default { sql };

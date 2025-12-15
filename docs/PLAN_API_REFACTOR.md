@@ -34,3 +34,16 @@
     *   Create a consistent `AppError` class or helper.
     *   Ensure all 500/400 responses return the exact same JSON shape (e.g., `{ error: { code: string, message: string, details?: any } }`).
 *   **Outcome:** Frontend can have a single global error handler.
+
+## 5. Pending Refactors (To Do)
+The following routes have not yet been fully refactored to the new standard (Thin Wrapper + Zod + Actions + Shared DB):
+
+*   `app/api/baglets/[id]/status/route.ts`:
+    *   Uses raw SQL SELECT.
+    *   Uses manual `neon()` initialization.
+    *   Needs Zod Validation.
+*   `app/api/batches/[id]/update-status/route.ts`:
+    *   Uses deprecated `request: Request`.
+    *   Uses manual `neon()` initialization.
+*   `app/api/batches/[id]/add-baglet/route.ts`:
+    *   Needs inspection and modernization.

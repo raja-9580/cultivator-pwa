@@ -67,6 +67,93 @@ export async function updateBagletStatus(
   `;
 }
 
+
+interface UpdateMetricsParams {
+  bagletId: string;
+  weight?: number;
+  temperature?: number;
+  humidity?: number;
+  ph?: number;
+}
+
+/**
+ * Updates baglet physical metrics.
+ * Uses COALESCE strategy to only update provided fields.
+ */
+export async function updateBagletMetrics(
+  sql: any,
+  params: UpdateMetricsParams
+) {
+  const { bagletId, weight, temperature, humidity, ph } = params;
+
+  await sql`
+    UPDATE baglet
+    SET 
+      latest_weight_g = COALESCE(${weight}::numeric, latest_weight_g),
+      latest_temp_c = COALESCE(${temperature}::numeric, latest_temp_c),
+      latest_humidity_pct = COALESCE(${humidity}::numeric, latest_humidity_pct),
+      latest_ph = COALESCE(${ph}::numeric, latest_ph),
+      logged_timestamp = NOW() 
+    WHERE baglet_id = ${bagletId}
+  `;
+}
+
+
+interface PrepareBagletParams {
+  bagletId: string;
+  batchId: string;
+  currentStatus: BagletStatus;
+  user?: string;
+  metrics: {
+    weight?: number;
+    temperature?: number;
+    humidity?: number;
+    ph?: number;
+  };
+}
+
+/**
+ * Atomically prepares a baglet:
+ * 1. Updates metrics (weights, pH, etc)
+ * 2. Updates status to PREPARED
+ * 3. Logs the action
+ */
+export async function prepareBaglet(
+  sql: any,
+  params: PrepareBagletParams
+) {
+  const { bagletId, batchId, currentStatus, user, metrics } = params;
+
+  // Transaction managed by caller or we can start one if sql is a pool
+  // But standard pattern here is caller handles transaction or we assume unsafe context if not passed explicit transaction object.
+  // Ideally, this function manages the transaction for atomicity.
+
+  await sql`BEGIN`;
+
+  try {
+    // 1. Update Metrics
+    await updateBagletMetrics(sql, {
+      bagletId,
+      ...metrics
+    });
+
+    // 2. Update Status to PREPARED
+    await updateBagletStatus(sql, {
+      bagletId,
+      batchId,
+      currentStatus,
+      newStatus: 'PREPARED' as BagletStatus, // Hardcoded as this is 'prepareBaglet'
+      notes: 'Batch Preparation: Metrics logged',
+      user
+    });
+
+    await sql`COMMIT`;
+  } catch (error) {
+    await sql`ROLLBACK`;
+    throw error;
+  }
+}
+
 // ============================================================
 // BAGLET RETRIEVAL LOGIC
 // ============================================================
