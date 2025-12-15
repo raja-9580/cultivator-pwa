@@ -14,7 +14,7 @@ export default function Sidebar() {
     { label: 'Dashboard', href: '/' },
     { label: 'Batches', href: '/batches' },
     { label: 'Baglets', href: '/baglets' },
-    { label: 'Metrics', href: '/metrics' },
+
     { label: 'Status Logger', href: '/status-logger' },
     { label: 'Harvest', href: '/harvest' },
     { label: 'Reports', href: '/reports' },
