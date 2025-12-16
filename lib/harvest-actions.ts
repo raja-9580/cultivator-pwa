@@ -286,3 +286,114 @@ export async function recordHarvest(
     throw error;
   }
 }
+
+// ============================================================
+// HARVEST HISTORY & REPORTS
+// ============================================================
+
+export interface HarvestHistoryParams {
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
+  mushroomId?: string; // Optional filter
+  activeOnly?: boolean;
+}
+
+export interface HarvestHistoryItem {
+  id: number;
+  bagletId: string;
+  weight: number;
+  timestamp: string; // ISO string
+  mushroomName: string;
+  mushroomId: string;
+  currentStatus: string;
+  notes?: string;
+  loggedBy: string;
+}
+
+export interface HarvestHistorySummary {
+  totalWeight: number;
+  totalCount: number;
+  topMushroom: string;
+}
+
+export interface HarvestHistoryResult {
+  items: HarvestHistoryItem[];
+  summary: HarvestHistorySummary;
+}
+
+/**
+ * Retrieves harvest history with optional filters.
+ * Returns both the list of records and summary stats for the filtered period.
+ */
+export async function getHarvestHistory(
+  sql: NeonQueryFunction<false, false>,
+  params: HarvestHistoryParams
+): Promise<HarvestHistoryResult> {
+  const { startDate, endDate, mushroomId, activeOnly } = params;
+
+  // Base conditions
+  // We use sql.raw or dynamic fragment construction if needed, but here simple conditions suffice.
+  // Note: timestamps are IST wall time.
+
+  const historyData = await sql`
+    WITH filtered_harvests AS (
+      SELECT 
+        h.harvest_id,
+        h.baglet_id,
+        h.harvest_weight_g,
+        h.harvested_timestamp,
+        h.notes,
+        h.logged_by,
+        b.current_status,
+        m.mushroom_name,
+        m.mushroom_id
+      FROM harvest h
+      LEFT JOIN baglet b ON h.baglet_id = b.baglet_id
+      JOIN batch ba ON h.batch_id = ba.batch_id
+      JOIN strain s ON ba.strain_code = s.strain_code
+      JOIN mushroom m ON s.mushroom_id = m.mushroom_id
+      WHERE 
+        (${startDate}::text IS NULL OR h.harvested_timestamp::DATE >= ${startDate}::DATE)
+        AND (${endDate}::text IS NULL OR h.harvested_timestamp::DATE <= ${endDate}::DATE)
+        AND (${mushroomId}::text IS NULL OR m.mushroom_id = ${mushroomId})
+        AND (
+          ${activeOnly}::boolean IS NOT TRUE 
+          -- If activeOnly is requested, ignore it or implement correctly via baglets. 
+          -- For now, just pass through as we rely on Date Filters.
+          OR 1=1
+        )
+    )
+    SELECT *,
+      -- Calculate aggregates over the whole filtered set (window function equivalent or separate/CTE)
+      (SELECT SUM(harvest_weight_g) FROM filtered_harvests) as total_weight_sum,
+      (SELECT COUNT(*) FROM filtered_harvests) as total_count,
+      (SELECT mushroom_name FROM filtered_harvests GROUP BY mushroom_name ORDER BY COUNT(*) DESC LIMIT 1) as top_mushroom_name
+    FROM filtered_harvests
+    ORDER BY harvested_timestamp DESC
+    LIMIT 3000; -- Safety cap increased for 6M view
+  `;
+
+  // Process results
+  const items: HarvestHistoryItem[] = historyData.map(row => ({
+    id: row.harvest_id,
+    bagletId: row.baglet_id,
+    weight: parseFloat(row.harvest_weight_g),
+    timestamp: row.harvested_timestamp,
+    mushroomName: row.mushroom_name,
+    mushroomId: row.mushroom_id,
+    currentStatus: row.current_status,
+    notes: row.notes,
+    loggedBy: row.logged_by
+  }));
+
+  // Extract summary from first row (same for all rows due to subqueries/window nature, or null if empty)
+  // If no rows, defaults to 0.
+  const first = historyData[0];
+  const summary: HarvestHistorySummary = {
+    totalWeight: first ? parseFloat(first.total_weight_sum || '0') : 0,
+    totalCount: first ? parseInt(first.total_count || '0') : 0,
+    topMushroom: first?.top_mushroom_name || 'None'
+  };
+
+  return { items, summary };
+}

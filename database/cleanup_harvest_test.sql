@@ -1,18 +1,7 @@
 -- Cleanup Script for Harvest Test Data
--- Matches correct Batch ID format (FPR-YYYYMMDD-Bxx)
+-- Removes all data created by seed_harvest_test.sql and seed_harvest_history.sql
+-- identifiable by logged_by = 'tester'
 
--- 1. Remove Harvest records for test batches
-DELETE FROM harvest 
-WHERE batch_id IN ('FPR-20251115-B91', 'FPR-20251101-B92', 'FPR-20251015-B93');
-
--- 2. Remove Baglet Status Logs for test batches
-DELETE FROM baglet_status_log 
-WHERE batch_id IN ('FPR-20251115-B91', 'FPR-20251101-B92', 'FPR-20251015-B93');
-
--- 3. Remove Baglets for test batches
-DELETE FROM baglet 
-WHERE batch_id IN ('FPR-20251115-B91', 'FPR-20251101-B92', 'FPR-20251015-B93');
-
--- 4. Remove Test Batches
-DELETE FROM batch 
-WHERE batch_id IN ('FPR-20251115-B91', 'FPR-20251101-B92', 'FPR-20251015-B93');
+DELETE FROM harvest WHERE logged_by = 'tester';
+DELETE FROM baglet WHERE logged_by = 'tester';
+DELETE FROM batch WHERE logged_by = 'tester';
