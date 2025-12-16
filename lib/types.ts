@@ -9,13 +9,9 @@ export enum BagletStatus {
   INCUBATED = 'INCUBATED',
   PINNED = 'PINNED',
   HARVESTED = 'HARVESTED',
-  REPINNED_1 = 'REPINNED_1',
   REHARVESTED_1 = 'REHARVESTED_1',
-  REPINNED_2 = 'REPINNED_2',
   REHARVESTED_2 = 'REHARVESTED_2',
-  REPINNED_3 = 'REPINNED_3',
   REHARVESTED_3 = 'REHARVESTED_3',
-  REPINNED_4 = 'REPINNED_4',
   REHARVESTED_4 = 'REHARVESTED_4',
   CONTAMINATED = 'CONTAMINATED',
   CRC_ANALYZED = 'CRC_ANALYZED',
@@ -118,6 +114,7 @@ export interface BatchDetails {
   };
   plannedBagletCount: number;
   actualBagletCount: number;
+  bagletWeightG: number;
   bagletStatusCounts: Record<string, number>;
   createdBy: string;
   createdAt: string;
@@ -131,7 +128,6 @@ export interface BatchDetails {
     temperature: number | null;
     humidity: number | null;
     ph?: number | null;
-    contaminated: boolean;
     createdAt: string;
   }>;
 }

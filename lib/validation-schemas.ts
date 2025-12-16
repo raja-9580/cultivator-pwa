@@ -11,6 +11,7 @@ export const PlanBatchSchema = z.object({
     strain_code: z.string().min(1, 'Strain code is required'),
     substrate_id: z.string().min(1, 'Substrate ID is required'),
     baglet_count: z.number().int().positive('Baglet count must be greater than 0'),
+    baglet_weight_g: z.number().int().positive().optional(),
     created_by: z.string().email('Valid email is required'),
 });
 

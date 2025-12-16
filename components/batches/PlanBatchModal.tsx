@@ -39,14 +39,15 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
 
     const isMobile = useMediaQuery('(max-width: 768px)');
     const { data: session } = useSession();
-    const userEmail = session?.user?.email || 'user@example.com';
+    const userEmail = session?.user?.email || '';
 
     const [formData, setFormData] = useState({
         strain_code: '',
         substrate_id: '',
         prepared_date: new Date().toISOString().split('T')[0],
         baglet_count: APP_CONFIG.DEFAULT_BAGLET_COUNT as number,
-        created_by: 'user@example.com',
+        baglet_weight_g: APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G as number,
+        created_by: '',
     });
 
     // Update created_by when session loads
@@ -127,6 +128,7 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                     substrate_id: '',
                     prepared_date: new Date().toISOString().split('T')[0],
                     baglet_count: APP_CONFIG.DEFAULT_BAGLET_COUNT,
+                    baglet_weight_g: APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G,
                     created_by: userEmail,
                 });
             } else {
@@ -244,44 +246,85 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                     required
                 />
 
-                {/* Baglet Count */}
-                <div>
-                    <label className="block text-xs md:text-sm font-medium text-gray-400 mb-1">
-                        Baglet Count * (Max: {APP_CONFIG.MAX_BAGLETS_PER_BATCH})
-                    </label>
-                    <div className="relative">
-                        <Input
-                            type="number"
-                            min={APP_CONFIG.MIN_BAGLETS_PER_BATCH}
-                            max={APP_CONFIG.MAX_BAGLETS_PER_BATCH}
-                            value={formData.baglet_count}
-                            onChange={(e) => {
-                                const value = parseInt(e.target.value) || APP_CONFIG.MIN_BAGLETS_PER_BATCH;
-                                setFormData({ ...formData, baglet_count: Math.min(value, APP_CONFIG.MAX_BAGLETS_PER_BATCH) });
-                            }}
-                            className="text-center font-mono text-base pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            required
-                        />
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, baglet_count: Math.max(formData.baglet_count - 1, APP_CONFIG.MIN_BAGLETS_PER_BATCH) })}
-                                className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
-                            >
-                                −
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, baglet_count: Math.min(formData.baglet_count + 1, APP_CONFIG.MAX_BAGLETS_PER_BATCH) })}
-                                className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
-                            >
-                                +
-                            </button>
+
+
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Baglet Count */}
+                    <div>
+                        <label className="block text-xs md:text-sm font-medium text-gray-400 mb-1">
+                            Baglet Count *
+                        </label>
+                        <div className="relative">
+                            <Input
+                                type="number"
+                                min={APP_CONFIG.MIN_BAGLETS_PER_BATCH}
+                                max={APP_CONFIG.MAX_BAGLETS_PER_BATCH}
+                                value={formData.baglet_count}
+                                onChange={(e) => {
+                                    const value = parseInt(e.target.value) || APP_CONFIG.MIN_BAGLETS_PER_BATCH;
+                                    setFormData({ ...formData, baglet_count: Math.min(value, APP_CONFIG.MAX_BAGLETS_PER_BATCH) });
+                                }}
+                                className="text-left font-mono text-base pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                required
+                            />
+                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, baglet_count: Math.max(formData.baglet_count - 1, APP_CONFIG.MIN_BAGLETS_PER_BATCH) })}
+                                    className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
+                                >
+                                    −
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, baglet_count: Math.min(formData.baglet_count + 1, APP_CONFIG.MAX_BAGLETS_PER_BATCH) })}
+                                    className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1">
+                            Max: {APP_CONFIG.MAX_BAGLETS_PER_BATCH}
+                        </p>
+                    </div>
+
+                    {/* Baglet Weight */}
+                    <div>
+                        <label className="block text-xs md:text-sm font-medium text-gray-400 mb-1">
+                            Baglet Weight (g) *
+                        </label>
+                        <div className="relative">
+                            <Input
+                                type="number"
+                                min={100}
+                                max={5000}
+                                value={formData.baglet_weight_g}
+                                onChange={(e) => {
+                                    const value = parseInt(e.target.value) || 0;
+                                    setFormData({ ...formData, baglet_weight_g: value });
+                                }}
+                                className="text-left font-mono text-base pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                required
+                            />
+                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, baglet_weight_g: Math.max(formData.baglet_weight_g - 10, 100) })}
+                                    className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
+                                >
+                                    −
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, baglet_weight_g: Math.min(formData.baglet_weight_g + 10, 5000) })}
+                                    className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent-leaf/40 text-gray-400 hover:text-accent-leaf transition-all text-lg flex items-center justify-center"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Enter between {APP_CONFIG.MIN_BAGLETS_PER_BATCH} and {APP_CONFIG.MAX_BAGLETS_PER_BATCH} baglets
-                    </p>
                 </div>
 
                 {/* Buttons */}

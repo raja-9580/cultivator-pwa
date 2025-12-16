@@ -4,6 +4,7 @@ import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
 import { updateBagletStatus } from './baglet-actions';
 import { INITIAL_BAGLET_STATUS, BATCH_ACTIONS } from './baglet-workflow';
+import { APP_CONFIG } from './config';
 
 // ============================================================
 // BATCH RETRIEVAL LOGIC
@@ -93,7 +94,9 @@ export async function getBatchDetails(
       b.batch_sequence,
       b.substrate_id,
       b.strain_code,
+      b.strain_code,
       b.baglet_count,
+      b.baglet_weight_g,
       b.logged_by,
       b.logged_timestamp,
       f.farm_name,
@@ -168,16 +171,19 @@ export async function getBatchDetails(
     unit: s.unit,
   }));
 
-  // Calculate total mix for the batch
+  // Calculate total mix for the batch (assuming recipe is per 1kg of final substrate)
   const bagletCount = batch.baglet_count;
+  const bagletWeightG = batch.baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G;
+  const totalBatchWeightKg = (bagletCount * bagletWeightG) / 1000;
+
   const mediumsForBatch = mediumsArray.map((m) => ({
     ...m,
-    qty_g: m.qty_g * bagletCount,
+    qty_g: m.qty_g * totalBatchWeightKg,
   }));
 
   const supplementsForBatch = supplementsArray.map((s) => ({
     ...s,
-    qty: s.qty * bagletCount,
+    qty: s.qty * totalBatchWeightKg,
   }));
 
   // Fetch baglet list for this batch
@@ -192,7 +198,6 @@ export async function getBatchDetails(
       latest_temp_c,
       latest_humidity_pct,
       latest_ph,
-      contamination_flag,
       logged_timestamp
     FROM baglet
     WHERE batch_id = ${batchId} AND is_deleted = FALSE
@@ -209,7 +214,6 @@ export async function getBatchDetails(
     temperature: b.latest_temp_c ? parseFloat(b.latest_temp_c) : null,
     humidity: b.latest_humidity_pct ? parseFloat(b.latest_humidity_pct) : null,
     ph: b.latest_ph ? parseFloat(b.latest_ph) : null,
-    contaminated: b.contamination_flag,
     createdAt: b.logged_timestamp,
   }));
 
@@ -237,6 +241,7 @@ export async function getBatchDetails(
     },
     plannedBagletCount: batch.baglet_count,
     actualBagletCount: parseInt(batch.actual_baglet_count || '0'),
+    bagletWeightG: batch.baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G,
     bagletStatusCounts: batch.baglet_status_counts || {},
     createdBy: batch.logged_by,
     createdAt: batch.logged_timestamp,
@@ -292,7 +297,10 @@ export async function planBatch(
   sql: NeonQueryFunction<false, false>,
   input: PlanBatchInput
 ): Promise<PlanBatchResult> {
-  const { farm_id, prepared_date, strain_code, substrate_id, baglet_count, created_by } = input;
+  const { farm_id, prepared_date, strain_code, substrate_id, baglet_count, baglet_weight_g, created_by } = input;
+
+  // Use provided weight or default from config
+  const finalBagletWeightG = baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G;
 
   // Convert prepared_date to DATE (default to today if not provided)
   const preparedDateObj = prepared_date ? new Date(prepared_date) : new Date();
@@ -362,12 +370,12 @@ export async function planBatch(
     await sql`
       INSERT INTO batch (
         batch_id, farm_id, prepared_date, batch_sequence,
-        substrate_id, strain_code, baglet_count,
+        substrate_id, strain_code, baglet_count, baglet_weight_g,
         logged_by, logged_timestamp, is_deleted
       ) VALUES (
         ${batchId}, ${farm_id}, ${preparedDateStr}, ${batchSequence},
-        ${substrate_id}, ${strain_code}, ${baglet_count},
-        ${created_by}, NOW(), FALSE
+        ${substrate_id}, ${strain_code}, ${baglet_count}, ${finalBagletWeightG},
+        ${created_by}, now_ist(), FALSE
       )
     `;
 
@@ -394,17 +402,19 @@ export async function planBatch(
     }
 
     // 7. Calculate mix summary
-    const mediums_per_baglet = substrateInfo.mediums;
+    const mediums_per_baglet = substrateInfo.mediums; // This is actually Recipe Ratio (per kg) from DB view
     const supplements_per_baglet = substrateInfo.supplements;
+
+    const totalBatchWeightKg = (baglet_count * finalBagletWeightG) / 1000;
 
     const mediums_for_batch = mediums_per_baglet.map((m: any) => ({
       ...m,
-      qty_g: m.qty_g * baglet_count,
+      qty_g: m.qty_g * totalBatchWeightKg,
     }));
 
     const supplements_for_batch = supplements_per_baglet.map((s: any) => ({
       ...s,
-      qty: s.qty * baglet_count,
+      qty: s.qty * totalBatchWeightKg,
     }));
 
     // COMMIT TRANSACTION
@@ -476,12 +486,12 @@ async function createBagletWithLog(
       baglet_id, batch_id, baglet_sequence,
       current_status, status_updated_at,
       latest_weight_g, latest_temp_c, latest_humidity_pct,
-      contamination_flag, logged_by, logged_timestamp, is_deleted
+      logged_by, logged_timestamp, is_deleted
     ) VALUES (
       ${bagletId}, ${batchId}, ${bagletSequence},
-      ${initialStatus}, NOW(),
+      ${initialStatus}, now_ist(),
       NULL, NULL, NULL,
-      FALSE, ${createdBy}, NOW(), FALSE
+      ${createdBy}, now_ist(), FALSE
     )
   `;
 
@@ -492,7 +502,7 @@ async function createBagletWithLog(
       notes, logged_by, logged_timestamp
     ) VALUES (
       ${bagletId}, ${batchId}, NULL, ${initialStatus},
-      ${notes}, ${createdBy}, NOW()
+      ${notes}, ${createdBy}, now_ist()
     )
   `;
 }

@@ -124,14 +124,14 @@ export async function getReadyBaglets(
       b.harvest_count,
       b.status_updated_at,
       m.mushroom_name,
-      EXTRACT(DAY FROM NOW() - b.status_updated_at) as days_since_pinned
+      EXTRACT(DAY FROM now_ist() - b.status_updated_at) as days_since_pinned
     FROM baglet b
     JOIN batch ba ON b.batch_id = ba.batch_id
     JOIN strain s ON ba.strain_code = s.strain_code
     JOIN mushroom m ON s.mushroom_id = m.mushroom_id
     WHERE b.current_status = ANY(${HARVEST_READY_STATUSES})
       AND b.is_deleted = FALSE
-      AND EXTRACT(DAY FROM NOW() - b.status_updated_at) >= ${APP_CONFIG.HARVEST_MIN_DAYS}
+      AND EXTRACT(DAY FROM now_ist() - b.status_updated_at) >= ${APP_CONFIG.HARVEST_MIN_DAYS}
     ORDER BY b.status_updated_at ASC
   `;
 
@@ -206,10 +206,10 @@ export async function recordHarvest(
         ${bagletId},
         ${baglet.batch_id},
         ${weight},
-        NOW(),
+        now_ist(),
         ${notes || null},
         ${harvestedBy},
-        NOW()
+        now_ist()
       )
       RETURNING harvest_id
     `;
@@ -235,7 +235,7 @@ export async function recordHarvest(
         harvest_count = harvest_count + 1,
         total_harvest_weight_g = COALESCE(total_harvest_weight_g, 0) + ${weight},
         current_status = ${nextStatus},
-        status_updated_at = NOW()
+        status_updated_at = now_ist()
       WHERE baglet_id = ${bagletId}
     `;
 
@@ -256,7 +256,7 @@ export async function recordHarvest(
         ${nextStatus},
         ${`Harvest recorded: ${weight}g (Flush #${flushNumber})`},
         ${harvestedBy},
-        NOW()
+        now_ist()
       )
     `;
 

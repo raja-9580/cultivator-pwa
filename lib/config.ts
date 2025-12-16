@@ -8,6 +8,7 @@ export const APP_CONFIG = {
     MAX_BAGLETS_PER_BATCH: 20,
     MIN_BAGLETS_PER_BATCH: 1,
     DEFAULT_BAGLET_COUNT: 10,
+    DEFAULT_BAGLET_WEIGHT_G: 2500,
 
     // Farm Configuration
     DEFAULT_FARM_ID: 'FPR',

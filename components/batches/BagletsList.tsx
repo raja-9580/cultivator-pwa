@@ -13,7 +13,6 @@ interface Baglet {
     temperature: number | null;
     humidity: number | null;
     ph?: number | null;
-    contaminated: boolean;
     createdAt: string;
 }
 
@@ -127,12 +126,7 @@ export default function BagletsList({ baglets }: BagletsListProps) {
                                     </div>
                                 )}
                             </div>
-                            {baglet.contaminated && (
-                                <div className="mt-2 text-xs text-red-400 flex items-center gap-1">
-                                    <span>⚠️</span>
-                                    <span>Contaminated</span>
-                                </div>
-                            )}
+
                         </div>
                     ))}
                     {filteredBaglets.length === 0 && (

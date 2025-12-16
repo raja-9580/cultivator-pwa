@@ -44,7 +44,7 @@ export async function updateBagletStatus(
     UPDATE baglet
     SET 
       current_status = ${newStatus},
-      status_updated_at = NOW()
+      status_updated_at = now_ist()
     WHERE baglet_id = ${bagletId}
   `;
 
@@ -93,7 +93,7 @@ export async function updateBagletMetrics(
       latest_temp_c = COALESCE(${temperature}::numeric, latest_temp_c),
       latest_humidity_pct = COALESCE(${humidity}::numeric, latest_humidity_pct),
       latest_ph = COALESCE(${ph}::numeric, latest_ph),
-      logged_timestamp = NOW() 
+      logged_timestamp = now_ist() 
     WHERE baglet_id = ${bagletId}
   `;
 }

@@ -1,5 +1,9 @@
 SET search_path TO "cultivator-db";
 
+CREATE OR REPLACE FUNCTION now_ist() RETURNS TIMESTAMP LANGUAGE sql AS $$
+  SELECT NOW() AT TIME ZONE 'Asia/Kolkata';
+$$;
+
 -- mushroom
 CREATE TABLE mushroom (
   mushroom_id TEXT PRIMARY KEY,
@@ -69,8 +73,9 @@ CREATE TABLE batch (
   substrate_id TEXT NOT NULL REFERENCES substrate(substrate_id),
   strain_code TEXT NOT NULL REFERENCES strain(strain_code),
   baglet_count INT DEFAULT 0,
+  baglet_weight_g INT DEFAULT 2500,
   logged_by TEXT,
-  logged_timestamp TIMESTAMPTZ DEFAULT now(),
+  logged_timestamp TIMESTAMP DEFAULT now_ist(),
   is_deleted BOOLEAN DEFAULT FALSE
 );
 
@@ -89,10 +94,9 @@ CREATE TABLE baglet (
   latest_ph NUMERIC,
   harvest_count INT DEFAULT 0,              -- how many harvests done
   total_harvest_weight_g NUMERIC DEFAULT 0, -- running total if needed
-  contamination_flag BOOLEAN DEFAULT FALSE,
-  status_updated_at TIMESTAMPTZ,
+  status_updated_at TIMESTAMP,
   logged_by TEXT,
-  logged_timestamp TIMESTAMPTZ DEFAULT now(),
+  logged_timestamp TIMESTAMP DEFAULT now_ist(),
   is_deleted BOOLEAN DEFAULT FALSE
 );
 
@@ -103,9 +107,9 @@ CREATE TABLE baglet_status_log (
   previous_status TEXT,
   status TEXT NOT NULL,
   notes TEXT,
-  status_timestamp TIMESTAMPTZ DEFAULT now(), -- When the status change actually occurred
+  status_timestamp TIMESTAMP DEFAULT now_ist(), -- When the status change actually occurred
   logged_by TEXT,
-  logged_timestamp TIMESTAMPTZ DEFAULT now()  -- System entry time
+  logged_timestamp TIMESTAMP DEFAULT now_ist()  -- System entry time
 );
 
 CREATE TABLE harvest (
@@ -113,10 +117,10 @@ CREATE TABLE harvest (
   baglet_id TEXT NOT NULL REFERENCES baglet(baglet_id),
   batch_id TEXT NOT NULL REFERENCES batch(batch_id),      -- Added for efficient reporting
   harvest_weight_g NUMERIC NOT NULL,                      -- Standardized to _g
-  harvested_timestamp TIMESTAMPTZ NOT NULL,               -- The actual time harvest happened
+  harvested_timestamp TIMESTAMP NOT NULL,               -- The actual time harvest happened
   notes TEXT,                                             -- Added for quality/flush observations
   logged_by TEXT,                                         -- User who entered the record
-  logged_timestamp TIMESTAMPTZ DEFAULT now()              -- System entry time
+  logged_timestamp TIMESTAMP DEFAULT now_ist()              -- System entry time
 );
 
 CREATE VIEW v_strain_full AS
