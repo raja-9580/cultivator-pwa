@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, QrCode, Weight, FileText, CheckCircle, TrendingUp, Package } from 'lucide-react';
+import Link from 'next/link';
+import { Search, QrCode, Weight, FileText, CheckCircle, TrendingUp, Package, History } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import QrScanner from '@/components/ui/QrScanner';
 import { toast } from 'sonner';
@@ -148,6 +149,13 @@ export default function HarvestPage() {
         <div className="max-w-4xl mx-auto px-2 md:p-4 space-y-2 pt-13 md:pt-6">
             <div className="flex items-center justify-between px-1">
                 <h1 className="text-2xl font-bold text-white">Harvest</h1>
+                <Link
+                    href="/harvest/history"
+                    className="p-2 -mr-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                    title="Harvest History"
+                >
+                    <History size={24} />
+                </Link>
             </div>
 
             {!baglet && (
@@ -326,8 +334,14 @@ export default function HarvestPage() {
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Weight</p>
                                     <div className="flex items-baseline gap-1">
-                                        <p className="text-white text-2xl font-bold">{stats.harvestedWeight.toFixed(0)}</p>
-                                        <span className="text-xs text-gray-500 font-medium">g</span>
+                                        <p className="text-white text-2xl font-bold">
+                                            {stats.harvestedWeight >= 1000
+                                                ? (stats.harvestedWeight / 1000).toFixed(1)
+                                                : stats.harvestedWeight.toFixed(0)}
+                                        </p>
+                                        <span className="text-xs text-gray-500 font-medium">
+                                            {stats.harvestedWeight >= 1000 ? 'kg' : 'g'}
+                                        </span>
                                     </div>
                                 </div>
                             </Card>
