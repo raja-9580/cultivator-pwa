@@ -83,10 +83,10 @@ export async function getHarvestStats(
        AND is_deleted = FALSE) as ready_count,
     
     (SELECT COUNT(*)::int FROM harvest 
-     WHERE harvested_timestamp >= CURRENT_DATE) as harvested_count,
+     WHERE harvested_timestamp::DATE >= (now_ist()::DATE)) as harvested_count,
 
     (SELECT COALESCE(SUM(harvest_weight_g), 0)::float FROM harvest 
-     WHERE harvested_timestamp >= CURRENT_DATE) as harvested_weight
+     WHERE harvested_timestamp::DATE >= (now_ist()::DATE)) as harvested_weight
   `;
 
   return {
@@ -124,14 +124,18 @@ export async function getReadyBaglets(
       b.harvest_count,
       b.status_updated_at,
       m.mushroom_name,
-      EXTRACT(DAY FROM NOW() - b.status_updated_at) as days_since_pinned
+      EXTRACT(DAY FROM now_ist() - b.status_updated_at) as days_since_pinned
     FROM baglet b
     JOIN batch ba ON b.batch_id = ba.batch_id
     JOIN strain s ON ba.strain_code = s.strain_code
     JOIN mushroom m ON s.mushroom_id = m.mushroom_id
     WHERE b.current_status = ANY(${HARVEST_READY_STATUSES})
       AND b.is_deleted = FALSE
-      AND EXTRACT(DAY FROM NOW() - b.status_updated_at) >= ${APP_CONFIG.HARVEST_MIN_DAYS}
+      AND (
+        (b.current_status = 'PINNED' AND (now_ist() - b.status_updated_at) >= ${`${APP_CONFIG.HARVEST_READY_HOURS_FROM_PIN} hours`}::interval)
+        OR
+        (b.current_status != 'PINNED' AND (now_ist() - b.status_updated_at) >= ${`${APP_CONFIG.HARVEST_READY_DAYS_FROM_HARVEST} days`}::interval)
+      )
     ORDER BY b.status_updated_at ASC
   `;
 
@@ -206,10 +210,10 @@ export async function recordHarvest(
         ${bagletId},
         ${baglet.batch_id},
         ${weight},
-        NOW(),
+        now_ist(),
         ${notes || null},
         ${harvestedBy},
-        NOW()
+        now_ist()
       )
       RETURNING harvest_id
     `;
@@ -235,7 +239,7 @@ export async function recordHarvest(
         harvest_count = harvest_count + 1,
         total_harvest_weight_g = COALESCE(total_harvest_weight_g, 0) + ${weight},
         current_status = ${nextStatus},
-        status_updated_at = NOW()
+        status_updated_at = now_ist()
       WHERE baglet_id = ${bagletId}
     `;
 
@@ -256,7 +260,7 @@ export async function recordHarvest(
         ${nextStatus},
         ${`Harvest recorded: ${weight}g (Flush #${flushNumber})`},
         ${harvestedBy},
-        NOW()
+        now_ist()
       )
     `;
 
@@ -273,6 +277,12 @@ export async function recordHarvest(
     };
   } catch (error: any) {
     await sql`ROLLBACK`;
+
+    // Handle unique constraint violation (duplicate harvest per day)
+    if (error.code === '23505' || error.message?.includes('unique constraint') || error.message?.includes('idx_harvest_baglet_day_unique')) {
+      throw new Error(`This baglet has already been harvested today.`);
+    }
+
     throw error;
   }
 }
