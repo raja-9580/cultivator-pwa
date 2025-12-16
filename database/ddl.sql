@@ -123,6 +123,9 @@ CREATE TABLE harvest (
   logged_timestamp TIMESTAMP DEFAULT now_ist()              -- System entry time
 );
 
+-- Constraint: A baglet can only be harvested once per day (IST)
+CREATE UNIQUE INDEX idx_harvest_baglet_day_unique ON harvest (baglet_id, (harvested_timestamp::DATE));
+
 CREATE VIEW v_strain_full AS
 SELECT
     s.strain_code,
