@@ -108,6 +108,27 @@ export const HARVEST_READY_STATUSES = [
 ] as const;
 
 /**
+ * Statuses that indicate the batch has moved past the production/lab phase (Inoculation)
+ * and is now in the incubation/fruiting process.
+ */
+export const POST_INOCULATION_STATUSES = [
+    BagletStatus.INCUBATED,
+    BagletStatus.PINNED,
+    BagletStatus.HARVESTED,
+    BagletStatus.REPINNED_1,
+    BagletStatus.REHARVESTED_1,
+    BagletStatus.REPINNED_2,
+    BagletStatus.REHARVESTED_2,
+    BagletStatus.REPINNED_3,
+    BagletStatus.REHARVESTED_3,
+    BagletStatus.REPINNED_4,
+    BagletStatus.REHARVESTED_4,
+    BagletStatus.CONTAMINATED,
+    BagletStatus.DISPOSED,
+    BagletStatus.RECYCLED,
+] as const;
+
+/**
  * Checks if a baglet is active (i.e., not in a terminal/ignored state).
  */
 export function isBagletActive(status: BagletStatus | string): boolean {
@@ -152,6 +173,17 @@ export function hasStatus(
     status: BagletStatus
 ): boolean {
     return getStatusCount(statusCounts, status) > 0;
+}
+
+/**
+ * Check if batch has baglets in ANY of the provided statuses.
+ */
+export function hasAnyStatus(
+    statusCounts: Record<string, number> | undefined,
+    statuses: readonly BagletStatus[]
+): boolean {
+    if (!statusCounts) return false;
+    return statuses.some(status => (statusCounts[status] ?? 0) > 0);
 }
 
 /**

@@ -205,10 +205,11 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
         // Validation - Frontend Checks
         // Validation - Frontend Checks
         // Enforce Integers for Weight and Humidity (Database requirement)
-        const weight = Math.round(parseFloat(data.weight));
-        const temp = parseFloat(data.temperature); // Temp allows decimals
-        const hum = Math.round(parseFloat(data.humidity));
-        const ph = parseFloat(data.ph); // pH allows decimals
+        // Parse values (Validation handled by StepperInput restrictions)
+        const weight = parseInt(data.weight, 10); // Parse as Integer
+        const temp = parseFloat(data.temperature);
+        const hum = parseInt(data.humidity, 10);  // Parse as Integer
+        const ph = parseFloat(data.ph);
 
         if (isNaN(weight) || isNaN(temp) || isNaN(hum) || isNaN(ph)) {
             alert('Please enter valid numbers for all fields');
@@ -333,7 +334,13 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
 
     if (!isOpen) return null;
 
-    const bagletStats = `${activeBaglets.filter(b => b.status === PREPARATION_TRANSITION.to).length}/${activeBaglets.length}`;
+    // Calculate completed count based on effective status (DB status + local overrides)
+    const completedCount = activeBaglets.filter(b => {
+        const effectiveStatus = localStatusOverrides[b.id] || b.status;
+        return effectiveStatus === PREPARATION_TRANSITION.to;
+    }).length;
+    const totalCount = activeBaglets.length;
+    const isAllComplete = completedCount === totalCount && totalCount > 0;
 
     return (
         <div className="fixed inset-0 z-[100] overflow-hidden bg-black/95 backdrop-blur-md animate-in fade-in duration-200 flex flex-col">
@@ -344,10 +351,21 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                     <h2 className="text-xl font-bold text-gray-200">
                         {step === 'CHECKLIST' ? 'Preparation Checklist' : 'Batch Preparation'}
                     </h2>
-                    {step === 'GRID' && <p className="text-xs text-gray-500 font-mono">Completed: {bagletStats}</p>}
+                    {step === 'GRID' && (
+                        <p className="text-xs text-gray-500 font-mono mt-1">
+                            Completed: <span className="text-accent-leaf font-bold">{completedCount}</span>
+                            <span className="text-gray-600 mx-1">/</span>
+                            <span className={isAllComplete ? "text-accent-leaf font-bold" : "text-gray-500"}>{totalCount}</span>
+                        </p>
+                    )}
                 </div>
-                <Button variant="ghost" onClick={onClose} className="rounded-full h-10 w-10 p-0 text-2xl hover:bg-white/10">
-                    &times;
+                <Button
+                    variant="ghost"
+                    onClick={onClose}
+                    className="rounded-full h-10 w-10 p-0 flex items-center justify-center bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all"
+                    title="Close"
+                >
+                    ✕
                 </Button>
             </div>
 
@@ -441,7 +459,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                     {/* Inputs - Removed Placeholders */}
                                                     <td className="p-2">
                                                         {isReadOnly ? (
-                                                            <div className="text-center font-mono text-white">{Number(data.weight).toFixed(1)}</div>
+                                                            <div className="text-center font-mono text-white">{Number(data.weight).toFixed(0)}</div>
                                                         ) : (
                                                             <StepperInput
                                                                 value={edits[baglet.id]?.weight ?? ''}
@@ -462,7 +480,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                             <StepperInput
                                                                 value={data.temperature}
                                                                 onChange={v => handleChange(baglet.id, 'temperature', v)}
-                                                                step={10} min={1} max={100} placeholder=""
+                                                                step={0.1} min={1} max={100} placeholder=""
                                                             />
                                                         )}
                                                     </td>
@@ -485,7 +503,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                             <StepperInput
                                                                 value={data.ph}
                                                                 onChange={v => handleChange(baglet.id, 'ph', v)}
-                                                                step={1} min={1} max={14} placeholder=""
+                                                                step={0.1} min={1} max={14} placeholder=""
                                                             />
                                                         )}
                                                     </td>
@@ -552,7 +570,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                 <div className="space-y-1">
                                                     <label className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Weight (g)</label>
                                                     {isReadOnly ? (
-                                                        <div className="p-2 bg-black/30 border border-white/5 rounded font-mono text-center text-white">{Number(data.weight).toFixed(1)}</div>
+                                                        <div className="p-2 bg-black/30 border border-white/5 rounded font-mono text-center text-white">{Number(data.weight).toFixed(0)}</div>
                                                     ) : (
                                                         <StepperInput value={data.weight} onChange={v => handleChange(baglet.id, 'weight', v)} step={10} min={1} max={5000} placeholder="" integerOnly={true} />
                                                     )}
@@ -562,7 +580,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                     {isReadOnly ? (
                                                         <div className="p-2 bg-black/30 border border-white/5 rounded font-mono text-center text-white">{Number(data.temperature).toFixed(1)}</div>
                                                     ) : (
-                                                        <StepperInput value={data.temperature} onChange={v => handleChange(baglet.id, 'temperature', v)} step={10} min={1} max={100} placeholder="" />
+                                                        <StepperInput value={data.temperature} onChange={v => handleChange(baglet.id, 'temperature', v)} step={0.1} min={1} max={100} placeholder="" />
                                                     )}
                                                 </div>
                                                 <div className="space-y-1">
@@ -578,7 +596,7 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                                     {isReadOnly ? (
                                                         <div className="p-2 bg-black/30 border border-white/5 rounded font-mono text-center text-white">{Number(data.ph).toFixed(1)}</div>
                                                     ) : (
-                                                        <StepperInput value={data.ph} onChange={v => handleChange(baglet.id, 'ph', v)} step={1} min={1} max={14} placeholder="" />
+                                                        <StepperInput value={data.ph} onChange={v => handleChange(baglet.id, 'ph', v)} step={0.1} min={1} max={14} placeholder="" />
                                                     )}
                                                 </div>
                                             </div>
@@ -608,6 +626,26 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
                                     );
                                 })}
                             </div>
+
+                            {/* Completion Banner / Done Button */}
+                            {isAllComplete && (
+                                <div className="mt-8 p-6 rounded-xl border border-accent-leaf/30 bg-accent-leaf/10 text-center animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-leaf text-black mb-4">
+                                        <span className="text-2xl">✓</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">All Baglets Prepared!</h3>
+                                    <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                                        You have successfully recorded metrics for all items in this batch.
+                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        onClick={onClose}
+                                        className="w-full md:w-auto min-w-[200px] h-12 text-lg bg-accent-leaf text-black hover:bg-accent-leaf/90 font-bold"
+                                    >
+                                        Done
+                                    </Button>
+                                </div>
+                            )}
                         </>
                     )}
 

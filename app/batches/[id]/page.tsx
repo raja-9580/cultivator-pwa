@@ -10,9 +10,10 @@ import BagletsList from '@/components/batches/BagletsList';
 
 import BatchPreparationGrid from '@/components/batches/BatchPreparationGrid';
 import { BatchDetails } from '@/lib/types';
-import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION, INITIAL_BAGLET_STATUS, getStatusCount } from '@/lib/baglet-workflow';
+import { getBatchWorkflowStage, STERILIZATION_TRANSITION, INOCULATION_TRANSITION, getStatusCount, hasAnyStatus, POST_INOCULATION_STATUSES } from '@/lib/baglet-workflow';
 import { BATCH_LABELS } from '@/lib/labels';
 import { useSession } from 'next-auth/react';
+
 
 function formatDate(dateString: string): string {
     if (!dateString) return '—';
@@ -260,8 +261,9 @@ export default function BatchDetailPage() {
 
 
                     {/* Add Extra Baglet - Manual Override for Surplus Material */}
-                    {/* "display when all baglet is prepared stat" (PLANNED) */}
-                    {getStatusCount(batch.bagletStatusCounts, INITIAL_BAGLET_STATUS) > 0 && (
+                    {/* Add Extra Baglet - Manual Override for Surplus Material */}
+                    {/* Only allow adding baglets if NO baglets have reached incubation or beyond (batch is not locked) */}
+                    {!hasAnyStatus(batch.bagletStatusCounts, POST_INOCULATION_STATUSES) && (
                         <Button
                             variant="secondary"
                             size="sm"
@@ -423,30 +425,7 @@ export default function BatchDetailPage() {
             {/* Baglets List */}
             <BagletsList baglets={baglets} />
 
-            {/* Action Buttons */}
-            <Card className="border border-gray-800/30">
-                <div className="p-4 md:p-5">
-                    <h3 className="text-sm font-semibold text-gray-300 mb-3">
-                        Quick Actions
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => router.push(`/baglets?batch=${batch.id}`)}
-                        >
-                            View All Baglets
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => router.push('/batches')}
-                        >
-                            Back to Batches
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+
         </div>
     );
 }

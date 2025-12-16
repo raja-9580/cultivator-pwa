@@ -62,8 +62,44 @@ export default function StepperInput({
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setLocalValue(e.target.value);
-        onChange(e.target.value);
+        const nextValue = e.target.value;
+
+        // Allow empty string
+        if (nextValue === '') {
+            setLocalValue('');
+            onChange('');
+            return;
+        }
+
+        // Determine Allowed Decimals
+        const decimals = integerOnly ? 0 : (Number.isInteger(step) ? 0 : (step.toString().split('.')[1]?.length || 0));
+
+        // Validation Regex
+        // 1. Matches optional minus sign
+        // 2. Matches digits
+        // 3. Matches optional decimal group (dot followed by 0 to N digits)
+        // If decimals == 0, the decimal group is not matched (effectively integer only)
+
+        let isValid = true;
+        if (decimals === 0) {
+            // Exact integer check (allow intermediate empty like "-")
+            // Actually, type="number" returns empty string for invalid input in some browsers, 
+            // but we want to catch "23.5" which is valid number but invalid for us.
+            // If we rely on regex:
+            isValid = /^-?\d*$/.test(nextValue);
+        } else {
+            // Valid simple float check
+            const regex = new RegExp(`^-?\\d*(\\.\\d{0,${decimals}})?$`);
+            isValid = regex.test(nextValue);
+        }
+
+        if (isValid) {
+            setLocalValue(nextValue);
+            onChange(nextValue);
+        }
+        // If invalid, we ignore the input event (the value doesn't change in React state)
+        // Note: For native inputs, the UI might flicker if we don't force update, 
+        // but typically controlled inputs handle this by re-rendering with old value.
     };
 
     // Key blocking removed to prevent "885" error when typing "88.5"
@@ -85,14 +121,39 @@ export default function StepperInput({
         if (val < min) clamped = min;
         if (val > max) clamped = max;
 
-        if (clamped !== val) {
-            // Apply clamping
-            const decimals = integerOnly ? 0 : (step.toString().split('.')[1]?.length || 0);
+        // Simplify formatting logic: ALWAYS format based on precision
+        const decimals = integerOnly ? 0 : (step.toString().split('.')[1]?.length || 0);
 
-            const nextStr = Number.isInteger(step) && Number.isInteger(clamped) && !integerOnly
-                ? clamped.toString()
-                : clamped.toFixed(decimals);
+        // If step is integer (e.g. 1, 10), we usually want 0 decimals UNLESS user typed them? 
+        // But the requirement is "allow only one decimal point".
+        // If we use step=0.1, we get 1 decimal. 
+        // So we strictly enforce toFixed(decimals).
 
+        let nextStr: string;
+
+        // Special case: If step is integer and value is integer, show as integer.
+        // But if step implies decimals (0.1), always show decimals? 
+        // Standard stepper behavior usually adheres to step precision.
+
+        if (integerOnly) {
+            nextStr = clamped.toFixed(0);
+        } else {
+            // If step has decimals (e.g. 0.1), strictly enforce that precision
+            if (!Number.isInteger(step)) {
+                nextStr = clamped.toFixed(decimals);
+            } else {
+                // If step is integer (e.g. 1), we typically allow integers. 
+                // But wait, what if I want 1 decimal but step 1?
+                // The component derives precision from step. 
+                // We will stick to that logic. 
+                // If step is 1, decimals is 0 -> toFixed(0). 
+                nextStr = Number.isInteger(clamped)
+                    ? clamped.toString()
+                    : clamped.toFixed(decimals);
+            }
+        }
+
+        if (nextStr !== localValue) {
             setLocalValue(nextStr);
             onChange(nextStr);
         }
