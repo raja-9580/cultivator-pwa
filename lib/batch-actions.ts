@@ -2,8 +2,8 @@
 import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
-import { updateBagletStatus } from './baglet-actions';
-import { INITIAL_BAGLET_STATUS, BATCH_ACTIONS } from './baglet-workflow';
+import { updateBagletStatus, createBagletWithLog } from './baglet-actions';
+import { BATCH_ACTIONS } from './baglet-workflow';
 import { APP_CONFIG } from './config';
 
 // ============================================================
@@ -381,6 +381,7 @@ export async function planBatch(
 
     // 6. Create baglets
     const createdBagletIds: string[] = [];
+    const bagletPromises: Promise<void>[] = [];
 
     for (let i = 1; i <= baglet_count; i++) {
       const bagletSequence = i;
@@ -391,15 +392,21 @@ export async function planBatch(
 
       createdBagletIds.push(bagletId);
 
-      // Create baglet with status log (using reusable helper)
-      await createBagletWithLog(sql, {
-        bagletId,
-        batchId,
-        bagletSequence,
-        notes: 'Initial baglet planning',
-        createdBy: created_by,
-      });
+      // Add baglet creation to promise array for parallel execution
+      bagletPromises.push(
+        createBagletWithLog(sql, {
+          bagletId,
+          batchId,
+          bagletSequence,
+          notes: 'Initial baglet planning',
+          createdBy: created_by,
+        })
+      );
     }
+
+    // Execute all baglet creations in parallel
+    // This reduces specific network latency accumulation (30s+ -> ~1s)
+    await Promise.all(bagletPromises);
 
     // 7. Calculate mix summary
     const mediums_per_baglet = substrateInfo.mediums; // This is actually Recipe Ratio (per kg) from DB view
@@ -450,62 +457,6 @@ export async function planBatch(
 // BAGLET MANAGEMENT LOGIC
 // ============================================================
 
-interface CreateBagletParams {
-  bagletId: string;
-  batchId: string;
-  bagletSequence: number;
-  notes?: string;
-  createdBy: string;
-}
-
-/**
- * Creates a new baglet with initial status and logs it.
- * This is a reusable helper to ensure status logging is always done.
- * 
- * @param sql - Neon SQL client
- * @param params - Baglet creation parameters
- */
-async function createBagletWithLog(
-  sql: NeonQueryFunction<false, false>,
-  params: CreateBagletParams
-): Promise<void> {
-  const {
-    bagletId,
-    batchId,
-    bagletSequence,
-    notes = 'Initial baglet planning',
-    createdBy
-  } = params;
-
-  // Use centralized initial status configuration
-  const initialStatus = INITIAL_BAGLET_STATUS;
-
-  // Insert baglet
-  await sql`
-    INSERT INTO baglet (
-      baglet_id, batch_id, baglet_sequence,
-      current_status, status_updated_at,
-      latest_weight_g, latest_temp_c, latest_humidity_pct,
-      logged_by, logged_timestamp, is_deleted
-    ) VALUES (
-      ${bagletId}, ${batchId}, ${bagletSequence},
-      ${initialStatus}, now_ist(),
-      NULL, NULL, NULL,
-      ${createdBy}, now_ist(), FALSE
-    )
-  `;
-
-  // Insert status log (ensures audit trail from creation)
-  await sql`
-    INSERT INTO baglet_status_log (
-      baglet_id, batch_id, previous_status, status,
-      notes, logged_by, logged_timestamp
-    ) VALUES (
-      ${bagletId}, ${batchId}, NULL, ${initialStatus},
-      ${notes}, ${createdBy}, now_ist()
-    )
-  `;
-}
 
 interface AddBagletResult {
   bagletId: string;
