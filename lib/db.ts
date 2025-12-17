@@ -10,4 +10,17 @@ if (!DATABASE_URL) {
 // Create SQL client
 export const sql = neon(DATABASE_URL);
 
-export default { sql };
+/**
+ * Returns a SQL client, optionally configured to bypass cache.
+ * @param forceRefresh If true, returns a client with cache: 'no-store'
+ */
+export function getSql(forceRefresh = false) {
+  if (forceRefresh) {
+    return neon(DATABASE_URL!, {
+      fetchOptions: { cache: 'no-store' }
+    });
+  }
+  return sql;
+}
+
+export default { sql, getSql };
