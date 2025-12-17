@@ -2,6 +2,7 @@
 
 import Card from '@/components/ui/Card';
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface Baglet {
     id: string;
@@ -86,12 +87,12 @@ export default function BagletsList({ baglets }: BagletsListProps) {
                             className="bg-dark-surface-light/20 border border-gray-800/30 rounded-lg p-3"
                         >
                             <div className="flex items-start justify-between mb-2">
-                                <a
-                                    href={`/baglets?search=${encodeURIComponent(baglet.id)}`}
+                                <Link
+                                    href={`/baglets/${baglet.id}`}
                                     className="text-sm font-medium text-accent-leaf hover:text-accent-sky transition-colors font-mono break-all"
                                 >
                                     {baglet.id}
-                                </a>
+                                </Link>
                                 <span
                                     className={`text-xs px-2 py-1 rounded-md font-medium shrink-0 ml-2 ${STATUS_COLORS[baglet.status] || 'bg-gray-700 text-gray-300'
                                         }`}
@@ -168,12 +169,12 @@ export default function BagletsList({ baglets }: BagletsListProps) {
                                     className="border-b border-gray-800/20 hover:bg-dark-surface-light/20 transition-colors"
                                 >
                                     <td className="py-3 px-4">
-                                        <a
-                                            href={`/baglets?search=${encodeURIComponent(baglet.id)}`}
+                                        <Link
+                                            href={`/baglets/${baglet.id}`}
                                             className="text-accent-leaf hover:text-accent-sky transition-colors font-mono text-xs block truncate"
                                         >
                                             {baglet.id}
-                                        </a>
+                                        </Link>
                                     </td>
                                     <td className="py-3 px-4">
                                         <span
