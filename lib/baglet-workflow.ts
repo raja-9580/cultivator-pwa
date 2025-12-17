@@ -92,16 +92,25 @@ export const TERMINAL_STATUSES = [
 ] as const;
 
 /**
- * Statuses that indicate a baglet is currently growing/pinning and potentially ready for harvest.
- * Used for filtering "Ready to Harvest" lists.
+ * Statuses that refer to the result of a harvest action.
+ * These transitions should typically be handled by the Harvest screen (to capture weight),
+ * not the generic Status Logger.
  */
-export const HARVEST_READY_STATUSES = [
-    BagletStatus.PINNED,
+export const HARVESTED_STATES = [
     BagletStatus.HARVESTED,
     BagletStatus.REHARVESTED_1,
     BagletStatus.REHARVESTED_2,
     BagletStatus.REHARVESTED_3,
     BagletStatus.REHARVESTED_4,
+] as const;
+
+/**
+ * Statuses that indicate a baglet is currently growing/pinning and potentially ready for harvest.
+ * Used for filtering "Ready to Harvest" lists.
+ */
+export const HARVEST_READY_STATUSES = [
+    BagletStatus.PINNED,
+    ...HARVESTED_STATES,
 ] as const;
 
 /**

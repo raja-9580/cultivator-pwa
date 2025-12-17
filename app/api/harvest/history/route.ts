@@ -1,20 +1,23 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { getSql } from '@/lib/db';
 import { getHarvestHistory, HarvestHistoryParams } from '@/lib/harvest-actions';
 
 // Force dynamic since we use query params and DB
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-    try {
-        const searchParams = request.nextUrl.searchParams;
+    const searchParams = request.nextUrl.searchParams;
+    const forceRefresh = searchParams.get('refresh') === 'true';
 
+    // Get SQL client (fresh or cached)
+    const sql = getSql(forceRefresh);
+
+    try {
         const params: HarvestHistoryParams = {
             startDate: searchParams.get('startDate') || undefined,
             endDate: searchParams.get('endDate') || undefined,
             mushroomId: searchParams.get('mushroomId') || undefined,
-            activeOnly: searchParams.get('activeOnly') === 'true',
         };
 
         const result = await getHarvestHistory(sql, params);

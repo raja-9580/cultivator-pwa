@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Calendar, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { HarvestHistoryResult, HarvestHistoryItem } from '@/lib/harvest-actions';
+import { formatDateToIST } from '@/lib/utils';
 
 type GroupBy = 'day' | 'week' | 'month';
 
@@ -25,6 +27,7 @@ export default function HarvestHistoryPage() {
     // Client-Side Filters
     const [selectedMushroom, setSelectedMushroom] = useState<string>('All');
     const [selectedDate, setSelectedDate] = useState('');
+    const [showBreakdown, setShowBreakdown] = useState(false);
 
     useEffect(() => {
         // Reset limits when filters change
@@ -40,7 +43,7 @@ export default function HarvestHistoryPage() {
         setGroupLimit(20);
     }, [groupBy]);
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (forceRefresh = false) => {
         try {
             setLoading(true);
 
@@ -57,8 +60,9 @@ export default function HarvestHistoryPage() {
                 start.setDate(now.getDate() - 180); // 6m
             }
 
-            params.set('startDate', start.toISOString().split('T')[0]);
-            params.set('activeOnly', 'false');
+            params.set('startDate', formatDateToIST(start));
+            params.set('endDate', formatDateToIST(now));
+            if (forceRefresh) params.set('refresh', 'true');
 
             const res = await fetch(`/api/harvest/history?${params}&_t=${Date.now()}`);
             if (res.ok) {
@@ -192,8 +196,9 @@ export default function HarvestHistoryPage() {
                     <Link href="/harvest" className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
                         <ChevronLeft size={24} />
                     </Link>
-                    <div>
+                    <div className="flex items-center gap-2">
                         <h1 className="text-xl font-bold text-white">Harvest History</h1>
+                        <RefreshButton onClick={() => fetchHistory(true)} loading={loading} />
                     </div>
                 </div>
 
@@ -214,52 +219,133 @@ export default function HarvestHistoryPage() {
                 </div>
             </div>
 
-            {/* HERO STATS CARD (Ultra Compact) */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-900/40 to-black border border-white/10 p-3 md:p-5 shadow-xl">
-                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-accent-leaf/10 blur-3xl rounded-full pointer-events-none"></div>
+            {/* HERO STATS: Zerodha Kite Style (Compact Total + Breakdown Logic) */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-accent-leaf/5 to-black border border-accent-leaf/10 shadow-xl">
+                {(() => {
+                    // Logic to compute types
+                    const statsByType: Record<string, { totalWeight: number, count: number }> = {};
+                    const dateFilteredItems = data.items.filter(item => {
+                        if (selectedDate && !item.timestamp.startsWith(selectedDate)) return false;
+                        return true;
+                    });
+                    dateFilteredItems.forEach(item => {
+                        if (!statsByType[item.mushroomName]) {
+                            statsByType[item.mushroomName] = { totalWeight: 0, count: 0 };
+                        }
+                        statsByType[item.mushroomName].totalWeight += item.weight;
+                        statsByType[item.mushroomName].count += 1;
+                    });
+                    const sortedStats = Object.entries(statsByType)
+                        .map(([name, stats]) => ({ name, ...stats }))
+                        .sort((a, b) => b.totalWeight - a.totalWeight);
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-5">
-                    {/* Main Metric: Yield */}
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-0.5 text-green-400/80 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                            <TrendingUp size={12} />
-                            <span>Total Yield</span>
-                        </div>
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-3xl md:text-5xl font-black text-white tracking-tight">
-                                {fmtWeight(filteredStats.totalWeight)}
-                            </span>
-                            <span className="text-[10px] md:text-sm font-medium text-white/50">produced</span>
-                        </div>
-                    </div>
+                    const topStat = sortedStats[0];
+                    const otherStats = sortedStats.slice(1);
 
-                    {/* Secondary Metrics (Horizontal) */}
-                    <div className="flex gap-4 md:gap-8 border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0 md:pl-6">
-                        <div className="flex flex-col justify-end">
-                            <span className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Harvests</span>
-                            <div className="flex items-center gap-1.5 text-white">
-                                <span className="text-base md:text-lg font-bold">{filteredStats.totalCount}</span>
+                    return (
+                        <>
+                            <div className="p-4">
+                                <div className="flex justify-between items-end mb-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-0.5 text-gray-400 text-[10px] font-bold uppercase tracking-widest opacity-80">
+                                            <TrendingUp size={10} className="text-accent-leaf" />
+                                            <span>Total Yield</span>
+                                        </div>
+                                        {/* Display Grand Total from filtered stats */}
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-3xl font-black text-white tracking-tight">
+                                                {fmtWeight(filteredStats.totalWeight)}
+                                            </span>
+                                            {filteredStats.totalCount > 0 && (
+                                                <div className="flex flex-col leading-tight -mb-1">
+                                                    <span className="text-[10px] font-mono font-bold text-accent-leaf">
+                                                        Avg {Math.round(filteredStats.totalWeight / filteredStats.totalCount)}g
+                                                    </span>
+                                                    <span className="text-[9px] text-gray-600 font-medium">
+                                                        / {filteredStats.totalCount} harvests
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* Mini Chart or Indicator placeholder could go here */}
+                                </div>
+
+                                {/* Divider */}
+                                <div className="h-px bg-white/5 mb-3"></div>
+
+                                {/* List of Types */}
+                                <div className="space-y-1">
+                                    {/* Header Row */}
+                                    <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-wider pb-1 border-b border-white/5 mb-1 px-1">
+                                        <div className="flex-1">Mushroom</div>
+                                        <div className="text-right w-20">Total</div>
+                                        <div className="text-right w-12">Avg</div>
+                                    </div>
+
+                                    {/* Top 1 Strain (Always Visible) */}
+                                    {topStat && (
+                                        <div className="group flex items-center py-1.5 px-1 hover:bg-white/5 rounded-lg transition-colors cursor-default">
+                                            <div className="flex-1 flex items-center gap-2 min-w-0">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-accent-leaf box-shadow-glow flex-shrink-0"></div>
+                                                <span className="text-sm font-bold text-gray-200 truncate">{topStat.name}</span>
+                                            </div>
+                                            <div className="w-20 text-right font-mono font-bold text-white text-xs">
+                                                {fmtWeight(topStat.totalWeight)}
+                                            </div>
+                                            <div className="w-12 text-right font-mono font-bold text-accent-leaf text-xs">
+                                                {(topStat.totalWeight / topStat.count).toFixed(0)}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Collapsible Others */}
+                                    {otherStats.length > 0 && (
+                                        <>
+                                            {showBreakdown && (
+                                                <div className="space-y-1 pt-1 animate-in slide-in-from-top-1 duration-300">
+                                                    {otherStats.map(stat => (
+                                                        <div key={stat.name} className="group flex items-center py-1.5 px-1 hover:bg-white/5 rounded-lg transition-colors opacity-80 hover:opacity-100 cursor-default">
+                                                            <div className="flex-1 flex items-center gap-2 min-w-0">
+                                                                <div className="w-1 h-1 rounded-full bg-gray-600 group-hover:bg-gray-400 flex-shrink-0"></div>
+                                                                <span className="text-xs font-medium text-gray-300 truncate">{stat.name}</span>
+                                                            </div>
+                                                            <div className="w-20 text-right font-mono font-medium text-gray-300 text-xs">
+                                                                {fmtWeight(stat.totalWeight)}
+                                                            </div>
+                                                            <div className="w-12 text-right font-mono font-medium text-accent-leaf/80 text-xs">
+                                                                {(stat.totalWeight / stat.count).toFixed(0)}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Toggle Button */}
+                                            <button
+                                                onClick={() => setShowBreakdown(!showBreakdown)}
+                                                className="w-full mt-2 py-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-white transition-colors uppercase font-bold tracking-wider"
+                                            >
+                                                <span>{showBreakdown ? 'Hide' : `+ ${otherStats.length} Others`}</span>
+                                                <ChevronDown size={12} className={`transition-transform duration-300 ${showBreakdown ? 'rotate-180' : ''}`} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex flex-col justify-end">
-                            <span className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Top Strain</span>
-                            <div className="flex items-center gap-1.5 text-white">
-                                <span className="text-base md:text-lg font-bold truncate max-w-[120px]">{filteredStats.topMushroom}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        </>
+                    );
+                })()}
             </div>
 
             {/* Smart Filters Bar */}
             <div className="sticky top-2 z-20 glass-panel bg-black/80 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-1.5 shadow-xl">
-                {/* Type Filter */}
                 <div className="relative flex-1 group min-w-0">
                     <div className="flex items-center justify-between px-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10">
                         <div className="flex items-center gap-2 overflow-hidden">
                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedMushroom === 'All' ? 'bg-white' : 'bg-accent-leaf'}`}></div>
                             <span className="text-xs font-medium text-gray-200 truncate">
-                                {selectedMushroom === 'All' ? 'All Strains' : selectedMushroom}
+                                {selectedMushroom === 'All' ? 'All Mushrooms' : selectedMushroom}
                             </span>
                         </div>
                         <ChevronDown size={14} className="text-gray-500 shrink-0 ml-1" />
@@ -269,7 +355,7 @@ export default function HarvestHistoryPage() {
                         onChange={(e) => setSelectedMushroom(e.target.value)}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     >
-                        <option value="All" className="text-black bg-white">All Strains</option>
+                        <option value="All" className="text-black bg-white">All Mushrooms</option>
                         {mushroomTypes.filter(m => m !== 'All').map(m => (
                             <option key={m} value={m} className="text-black bg-white">{m}</option>
                         ))}
@@ -352,46 +438,77 @@ export default function HarvestHistoryPage() {
                             {isExpanded && (
                                 <div className="bg-dark-surface-light/40 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm animate-slide-down">
                                     <div className="divide-y divide-white/5">
-                                        {group.items.map(item => (
-                                            <div key={item.id} className="p-3 md:p-4 hover:bg-white/5 transition-colors grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 items-start">
+                                        {group.items.map(item => {
+                                            // Robust check for terminal states
+                                            const TERMINAL_STATUSES = ['DISPOSED', 'CONTAMINATED', 'SOLD'];
+                                            const isDisposed = TERMINAL_STATUSES.includes(item.currentStatus?.toUpperCase() || '');
 
-                                                {/* Row 1 Left: Name */}
-                                                <div className="text-white font-bold text-sm tracking-wide">
-                                                    {item.mushroomName}
-                                                </div>
+                                            // Calculate offset from average if valid
+                                            const isAboveAvg = item.bagletAverageWeight > 0 && item.weight >= item.bagletAverageWeight;
+                                            const weightDiff = item.bagletAverageWeight > 0 ? Math.abs(item.weight - item.bagletAverageWeight) : 0;
 
-                                                {/* Row 1 Right: Weight */}
-                                                <div className="text-accent-leaf font-bold font-mono text-base text-right">
-                                                    {item.weight}g
-                                                </div>
+                                            return (
+                                                <Link
+                                                    key={item.id}
+                                                    href={`/baglets/${item.bagletId}`}
+                                                    className={`block group/item relative p-3 md:p-4 hover:bg-white/5 transition-all border-l-4 ${!isDisposed ? 'border-l-accent-leaf bg-gradient-to-r from-accent-leaf/5 to-transparent' : 'border-l-transparent opacity-60 hover:opacity-100 grayscale-[0.3] hover:grayscale-0'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-start gap-4">
+                                                        {/* LEFT COLUMN */}
+                                                        <div className="space-y-1.5 flex-1 min-w-0">
+                                                            {/* Name - Restored to White for contrast */}
+                                                            <div className="text-white font-bold text-sm md:text-base tracking-wide truncate">
+                                                                {item.mushroomName}
+                                                            </div>
 
-                                                {/* Row 2 Left: Date & Time */}
-                                                <div className="text-gray-500 text-xs font-mono">
-                                                    {new Date(item.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    <span className="text-gray-700 mx-1.5">|</span>
-                                                    {new Date(item.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
+                                                            {/* Metadata Badges Row */}
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                {/* Date - Slightly brighter gray */}
+                                                                <div className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                                                                    <span>{new Date(item.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                                    <span className="w-0.5 h-0.5 rounded-full bg-gray-500"></span>
+                                                                    <span>{new Date(item.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                </div>
 
-                                                {/* Row 2 Right: Status */}
-                                                <div className="text-right">
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-white/5 text-gray-400 border border-white/5 uppercase tracking-wider font-bold">
-                                                        {item.currentStatus}
-                                                    </span>
-                                                </div>
+                                                                {/* Flush Count Pill - Restored visibility */}
+                                                                <div className="text-[10px] font-mono font-medium flex items-center gap-1 bg-accent-leaf/10 text-accent-leaf px-2 py-0.5 rounded border border-accent-leaf/20">
+                                                                    <span>Flush #{item.flushNumber}</span>
+                                                                    <span className="opacity-60 text-[9px]">of {item.totalFlushes}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
-                                                {/* Row 3 (Full Width): Baglet ID + Notes */}
-                                                <div className="col-span-2 flex items-center justify-between border-t border-white/5 pt-1.5 mt-0.5">
-                                                    <code className="text-[10px] text-gray-500 font-mono tracking-tight">
-                                                        {item.bagletId}
-                                                    </code>
-                                                    {item.notes && (
-                                                        <span className="text-[10px] text-gray-600 italic truncate max-w-[150px]">
-                                                            {item.notes}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
+                                                        {/* RIGHT COLUMN: Metrics */}
+                                                        <div className="text-right shrink-0">
+                                                            {/* Restored full accent brightness */}
+                                                            <div className="text-accent-leaf font-bold font-mono text-lg md:text-xl leading-none">
+                                                                {item.weight}g
+                                                            </div>
+
+                                                            {/* Average Context */}
+                                                            {item.bagletAverageWeight > 0 && (
+                                                                <div className="mt-1 flex items-center justify-end gap-1.5 text-[10px]">
+                                                                    <span className="text-gray-500 font-medium">Avg {Math.round(item.bagletAverageWeight)}g</span>
+                                                                    {Math.round(weightDiff) > 0 && (
+                                                                        <span className={`px-1 rounded-sm ${isAboveAvg ? 'text-green-400 bg-green-400/10' : 'text-orange-400 bg-orange-400/10'}`}>
+                                                                            {isAboveAvg ? '▲' : '▼'} {Math.round(weightDiff)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* FOOTER ROW: ID Only */}
+                                                    <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between gap-4">
+                                                        <code className="text-[10px] text-gray-600 font-mono tracking-tight group-hover/item:text-gray-500 transition-colors">
+                                                            {item.bagletId}
+                                                        </code>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

@@ -1,5 +1,6 @@
 
 import { BagletStatus } from './types';
+import { INITIAL_BAGLET_STATUS } from './baglet-workflow';
 
 interface UpdateStatusParams {
   bagletId: string;
@@ -250,4 +251,65 @@ export async function getBagletById(
   `;
 
   return result.length > 0 ? result[0] : null;
+}
+
+// ============================================================
+// BAGLET CREATION LOGIC
+// ============================================================
+
+interface CreateBagletParams {
+  bagletId: string;
+  batchId: string;
+  bagletSequence: number;
+  notes?: string;
+  createdBy: string;
+}
+
+/**
+ * Creates a new baglet with initial status and logs it.
+ * This is a reusable helper to ensure status logging is always done.
+ * 
+ * @param sql - Neon SQL client
+ * @param params - Baglet creation parameters
+ */
+export async function createBagletWithLog(
+  sql: any,
+  params: CreateBagletParams
+): Promise<void> {
+  const {
+    bagletId,
+    batchId,
+    bagletSequence,
+    notes = 'Initial baglet planning',
+    createdBy
+  } = params;
+
+  // Use centralized initial status configuration
+  const initialStatus = INITIAL_BAGLET_STATUS;
+
+  // Insert baglet
+  await sql`
+    INSERT INTO baglet (
+      baglet_id, batch_id, baglet_sequence,
+      current_status, status_updated_at,
+      latest_weight_g, latest_temp_c, latest_humidity_pct,
+      logged_by, logged_timestamp, is_deleted
+    ) VALUES (
+      ${bagletId}, ${batchId}, ${bagletSequence},
+      ${initialStatus}, now_ist(),
+      NULL, NULL, NULL,
+      ${createdBy}, now_ist(), FALSE
+    )
+  `;
+
+  // Insert status log (ensures audit trail from creation)
+  await sql`
+    INSERT INTO baglet_status_log (
+      baglet_id, batch_id, previous_status, status,
+      notes, logged_by, logged_timestamp
+    ) VALUES (
+      ${bagletId}, ${batchId}, NULL, ${initialStatus},
+      ${notes}, ${createdBy}, now_ist()
+    )
+  `;
 }
