@@ -126,6 +126,32 @@ CREATE TABLE harvest (
 -- Constraint: A baglet can only be harvested once per day (IST)
 CREATE UNIQUE INDEX idx_harvest_baglet_day_unique ON harvest (baglet_id, (harvested_timestamp::DATE));
 
+-- ==========================================
+-- Contamination Catalog (Reference Table)
+-- ==========================================
+CREATE TABLE contamination_catalog (
+    contamination_code TEXT PRIMARY KEY,
+    contamination_type TEXT NOT NULL,
+    contaminant TEXT NOT NULL,
+    symptoms TEXT,
+    notes TEXT
+);
+
+-- ==========================================
+-- Baglet Contamination Log (Association Table)
+-- ==========================================
+CREATE TABLE baglet_contamination (
+    id BIGSERIAL PRIMARY KEY,
+    baglet_id TEXT NOT NULL REFERENCES baglet(baglet_id),
+    contamination_code TEXT NOT NULL REFERENCES contamination_catalog(contamination_code),
+    notes TEXT,
+    logged_by TEXT,
+    logged_timestamp TIMESTAMP DEFAULT now_ist(),
+    
+    -- Constraint: Unique combination ensuring a specific contamination type is only logged once per baglet
+    CONSTRAINT uq_baglet_contamination UNIQUE (baglet_id, contamination_code)
+);
+
 CREATE VIEW v_strain_full AS
 SELECT
     s.strain_code,
@@ -159,3 +185,4 @@ LEFT JOIN substrate_medium sm ON s.substrate_id = sm.substrate_id
 LEFT JOIN medium m ON sm.medium_id = m.medium_id
 LEFT JOIN substrate_supplement ss ON s.substrate_id = ss.substrate_id
 LEFT JOIN supplement sp ON ss.supplement_id = sp.supplement_id;
+

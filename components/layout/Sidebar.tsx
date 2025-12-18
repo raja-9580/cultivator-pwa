@@ -17,6 +17,7 @@ export default function Sidebar() {
 
     { label: 'Status Logger', href: '/status-logger' },
     { label: 'Harvest', href: '/harvest' },
+    { label: 'CRC Analysis', href: '/crc' },
     { label: 'Reports', href: '/reports' },
     { label: 'Profile', href: '/profile' },
   ];

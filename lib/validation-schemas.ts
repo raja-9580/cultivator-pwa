@@ -51,3 +51,21 @@ export const PrepareBagletSchema = z.object({
 });
 
 export type PrepareBagletInput = z.infer<typeof PrepareBagletSchema>;
+
+// ==========================================
+// CRC ANALYSIS SCHEMAS
+// ==========================================
+
+export const ContaminationFindingSchema = z.object({
+    contaminationCode: z.string().min(1, "Contamination code is required"),
+    notes: z.string().optional(),
+});
+
+export const SubmitCRCAnalysisSchema = z.object({
+    bagletId: z.string().min(1, "Baglet ID is required"),
+    findings: z.array(ContaminationFindingSchema).min(1, "At least one finding is required"),
+    notes: z.string().optional(), // General notes for the log
+    user: z.string().optional(),
+});
+
+export type SubmitCRCAnalysisInput = z.infer<typeof SubmitCRCAnalysisSchema>;

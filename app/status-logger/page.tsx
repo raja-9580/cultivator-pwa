@@ -5,7 +5,7 @@ import { Search, QrCode, Activity, Clock, AlertCircle, X, Target, Zap } from 'lu
 import Card from '@/components/ui/Card';
 import QrScanner from '@/components/ui/QrScanner';
 import { BagletStatus } from '@/lib/types';
-import { getAvailableTransitions, HARVESTED_STATES } from '@/lib/baglet-workflow';
+import { getGeneralTransitions } from '@/lib/baglet-workflow';
 import { toast } from 'sonner';
 
 interface BagletDetails {
@@ -39,13 +39,10 @@ export default function StatusLoggerPage() {
       if (data.baglets && data.baglets.length > 0) {
         const found = data.baglets[0];
         setBaglet(found);
-        const transitions = getAvailableTransitions(found.status);
+        const transitions = getGeneralTransitions(found.status);
 
-        // Filter out Harvest actions (handled in Harvest Screen)
-        const filteredTransitions = transitions.filter(t => !(HARVESTED_STATES as readonly BagletStatus[]).includes(t));
-
-        setAvailableTransitions(filteredTransitions);
-        if (filteredTransitions.length > 0) {
+        setAvailableTransitions(transitions);
+        if (transitions.length > 0) {
           // No need to pre-select status for buttons
         }
       } else {

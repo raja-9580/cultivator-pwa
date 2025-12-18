@@ -56,7 +56,7 @@ export const BAGLET_TRANSITIONS: Record<BagletStatus, BagletStatus[]> = {
     [BagletStatus.REHARVESTED_3]: [BagletStatus.REHARVESTED_4, BagletStatus.CONTAMINATED, BagletStatus.DISPOSED],
     [BagletStatus.REHARVESTED_4]: [BagletStatus.CONTAMINATED, BagletStatus.DISPOSED],
     [BagletStatus.CONTAMINATED]: [BagletStatus.CRC_ANALYZED, BagletStatus.DISPOSED],
-    [BagletStatus.CRC_ANALYZED]: [BagletStatus.DISPOSED],
+    [BagletStatus.CRC_ANALYZED]: [BagletStatus.CRC_ANALYZED, BagletStatus.DISPOSED],
     [BagletStatus.DAMAGED]: [BagletStatus.DISPOSED],
     [BagletStatus.DISPOSED]: [BagletStatus.RECYCLED],
     [BagletStatus.RECYCLED]: [], // End of life
@@ -79,6 +79,19 @@ export function validateTransition(currentStatus: BagletStatus, nextStatus: Bagl
 }
 
 /**
+ * Returns the list of transitions suitable for the General Status Logger.
+ * Excludes specialized workflows like Harvest and CRC Analysis which have dedicated screens.
+ */
+export function getGeneralTransitions(currentStatus: BagletStatus): BagletStatus[] {
+    const allTransitions = getAvailableTransitions(currentStatus);
+
+    return allTransitions.filter(status =>
+        !(HARVESTED_STATES as readonly BagletStatus[]).includes(status) &&
+        !(CRC_STATES as readonly BagletStatus[]).includes(status)
+    );
+}
+
+/**
  * Statuses that indicate a baglet is no longer active in the production line.
  * These are ignored when calculating batch progress (e.g., preparation %, sterilization %).
  */
@@ -86,6 +99,17 @@ export const TERMINAL_STATUSES = [
     BagletStatus.DELETED,
     BagletStatus.CONTAMINATED,
     BagletStatus.CRC_ANALYZED,
+    BagletStatus.DAMAGED,
+    BagletStatus.DISPOSED,
+    BagletStatus.RECYCLED,
+] as const;
+
+/**
+ * Statuses that indicate a baglet has been physically removed or retired.
+ * A batch is considered "Active" until ALL its baglets have reached one of these states.
+ */
+export const BAGLET_END_STATUSES = [
+    BagletStatus.DELETED,
     BagletStatus.DAMAGED,
     BagletStatus.DISPOSED,
     BagletStatus.RECYCLED,
@@ -111,6 +135,23 @@ export const HARVESTED_STATES = [
 export const HARVEST_READY_STATUSES = [
     BagletStatus.PINNED,
     ...HARVESTED_STATES,
+] as const;
+
+/**
+ * Statuses related to CRC (Contamination Root Cause) analysis.
+ * These actions are handled in the specific CRC Dashboard, not generic loggers.
+ */
+export const CRC_STATES = [
+    BagletStatus.CRC_ANALYZED,
+] as const;
+
+/**
+ * Statuses that are eligible for CRC analysis.
+ * CONTAMINATED baglets need analysis, and CRC_ANALYZED baglets can be re-analyzed/updated.
+ */
+export const CRC_ELIGIBLE_STATUSES = [
+    BagletStatus.CONTAMINATED,
+    BagletStatus.CRC_ANALYZED,
 ] as const;
 
 /**

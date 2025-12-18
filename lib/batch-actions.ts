@@ -3,7 +3,7 @@ import { NeonQueryFunction } from '@neondatabase/serverless';
 import { PlanBatchInput, UpdateBatchStatusInput } from './validation-schemas';
 import { BatchListItem, BatchDetails, BagletStatus } from './types';
 import { updateBagletStatus, createBagletWithLog } from './baglet-actions';
-import { BATCH_ACTIONS } from './baglet-workflow';
+import { BATCH_ACTIONS, BAGLET_END_STATUSES } from './baglet-workflow';
 import { APP_CONFIG } from './config';
 
 // ============================================================
@@ -69,6 +69,23 @@ export async function getAllBatches(
     preparedDate: row.prepared_date,
     bagletStatusCounts: row.baglet_status_counts || {},
   }));
+}
+
+
+/**
+ * Retrieves IDs of all batches that are considered "Active".
+ * Logic: A batch is active if it has at least one baglet that hasn't reached a terminal "End" state.
+ */
+export async function getActiveBatchIds(
+  sql: any
+): Promise<string[]> {
+  const result = await sql`
+    SELECT DISTINCT batch_id 
+    FROM baglet 
+    WHERE current_status NOT IN (${BAGLET_END_STATUSES})
+    AND is_deleted = FALSE
+  `;
+  return result.map((row: any) => row.batch_id);
 }
 
 
