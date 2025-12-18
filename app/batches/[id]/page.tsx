@@ -200,9 +200,12 @@ export default function BatchDetailPage() {
                         <span>←</span>
                         <span className="hidden sm:inline">Back</span>
                     </Button>
-                    <h1 className="text-2xl md:text-3xl font-bold text-accent-leaf">
-                        {batch.id}
-                    </h1>
+                    <div className="flex items-baseline gap-2">
+                        <h1 className="text-2xl md:text-3xl font-black text-accent-leaf tracking-tighter">
+                            {batch.id}
+                        </h1>
+                        <span className="text-sm font-bold text-gray-600 tabular-nums">#{batch.batchSequence}</span>
+                    </div>
                 </div>
 
                 {/* Bulk Actions in Header */}
@@ -339,7 +342,7 @@ export default function BatchDetailPage() {
 
                         <div>
                             <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                Strain
+                                Code
                             </div>
                             <div className="text-base font-semibold text-gray-200">
                                 {batch.strain.code}
@@ -372,7 +375,7 @@ export default function BatchDetailPage() {
                                 Batch Sequence
                             </div>
                             <div className="text-base font-semibold text-gray-200">
-                                #{batch.sequence}
+                                #{batch.batchSequence}
                             </div>
                         </div>
 

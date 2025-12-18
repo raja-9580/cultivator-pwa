@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import Button from '@/components/ui/Button';
 import { Batch } from '@/lib/types';
-import { BATCH_LABELS } from '@/lib/labels';
-import { getBatchWorkflowStage } from '@/lib/baglet-workflow';
+import { getBatchWorkflowStage, INOCULATION_TRANSITION, getStatusCount } from '@/lib/baglet-workflow';
+import { FileText, Database } from 'lucide-react';
 
 function formatDate(date: Date | string | null | undefined): string {
     if (!date) return '—';
@@ -24,94 +23,108 @@ interface BatchCardProps {
 
 export default function BatchCard({ batch, onStatusUpdate, onPrepare, updatingBatch }: BatchCardProps) {
     const isUpdating = updatingBatch === batch.id;
-
-    // Centralized Workflow Logic
     const stage = getBatchWorkflowStage(batch.bagletStatusCounts);
 
     return (
-        <div className="bg-dark-surface border border-gray-800/30 rounded-xl p-4 hover:border-gray-700/50 transition-all duration-200 shadow-sm hover:shadow-md">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                    <Link
-                        href={`/batches/${batch.id}`}
-                        className="text-accent-leaf hover:text-accent-sky font-semibold text-sm transition-colors block truncate"
-                    >
-                        🌾 {batch.id}
-                    </Link>
-                    <p className="text-gray-400 text-xs mt-0.5">{batch.mushroomType}</p>
+        <div className="bg-[#0A0A0A] border border-white/[0.05] rounded-xl p-3.5 hover:border-accent-leaf/30 transition-all duration-300 relative group overflow-hidden flex flex-col">
+            {/* Top Row: Mushroom & Vital Stats */}
+            <div className="flex justify-between items-start gap-3 mb-0.5">
+                <span className="text-[13px] font-black text-white leading-tight uppercase tracking-tight truncate flex-1">
+                    {batch.mushroomType}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[9px] font-black text-gray-700 tabular-nums">#{batch.batchSequence}</span>
+                    <div className={`px-1.5 py-0.5 rounded-[3px] text-[10px] font-black tabular-nums leading-none border ${batch.actualBagletCount < batch.plannedBagletCount
+                        ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+                        : 'bg-accent-leaf/5 border-accent-leaf/10 text-accent-leaf/80'
+                        }`}>
+                        {batch.actualBagletCount}/{batch.plannedBagletCount}
+                    </div>
                 </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-gray-800/30">
-                <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Baglets</p>
-                    <p className="text-sm font-medium text-gray-200">
-                        {batch.actualBagletCount} / {batch.plannedBagletCount}
-                    </p>
-                </div>
-                <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Created</p>
-                    <p className="text-sm font-medium text-gray-200">{formatDate(batch.createdDate)}</p>
-                </div>
+            {/* Vendor Row: Compact but full visibility */}
+            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-snug mb-3 line-clamp-2 min-h-[1.5rem]">
+                {batch.vendorName}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 flex-wrap">
+            {/* Center: The Primary ID */}
+            <div className="mb-4">
+                <Link
+                    href={`/batches/${batch.id}`}
+                    className="text-lg font-black text-accent-leaf hover:text-white transition-all tracking-tighter break-all block leading-none"
+                >
+                    {batch.id}
+                </Link>
+            </div>
 
+            {/* Footer: Multi-info Row */}
+            <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/[0.03]">
+                <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400">
+                        <span>{formatDate(batch.preparedDate)}</span>
+                        <span className="text-gray-700">•</span>
+                        <span className="text-gray-600 truncate max-w-[60px]">{(batch.createdBy?.split('@')[0] || '—').toLowerCase()}</span>
+                    </div>
+                </div>
 
-                {(stage === 'PREPARE' || stage === 'RESUME') && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs px-3 py-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                        onClick={() => onPrepare(batch.id)}
-                        disabled={isUpdating}
-                    >
-                        {isUpdating ? '...' : (stage === 'RESUME' ? BATCH_LABELS.RESUME_PREPARATION : BATCH_LABELS.PREPARE_BATCH)}
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {/* Substrate Popover */}
+                    <details className="group/sub relative">
+                        <summary className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05] text-gray-600 hover:text-accent-leaf list-none cursor-pointer transition-colors active:scale-90">
+                            <Database size={13} />
+                        </summary>
+                        <div className="absolute bottom-full right-0 mb-3 w-56 p-3 rounded-xl bg-[#111] border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="flex flex-col gap-2">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1">Substrate Context</span>
+                                <span className="text-[11px] text-gray-300 font-medium leading-relaxed">{batch.substrateDescription}</span>
+                                <span className="text-[9px] text-gray-600 font-mono uppercase tracking-tighter">{batch.substrateCode}</span>
+                            </div>
+                        </div>
+                    </details>
 
+                    {/* Workflow Action */}
+                    {(stage === 'PREPARE' || stage === 'RESUME') && (
+                        <button
+                            onClick={() => onPrepare(batch.id)}
+                            disabled={isUpdating}
+                            className="h-8 px-4 rounded-lg bg-accent-leaf text-black text-[10px] font-black uppercase tracking-widest active:scale-95 disabled:opacity-50 transition-all"
+                        >
+                            {isUpdating ? '...' : (stage === 'RESUME' ? 'RESUME' : 'PREPARE')}
+                        </button>
+                    )}
 
+                    {stage === 'STERILIZE' && (
+                        <button
+                            onClick={() => onStatusUpdate(batch.id, 'sterilize')}
+                            disabled={isUpdating}
+                            className="h-8 px-4 rounded-lg bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 disabled:opacity-50 shadow-lg shadow-orange-600/10 transition-all"
+                        >
+                            {isUpdating ? '...' : 'STERILIZE'}
+                        </button>
+                    )}
 
-                {stage === 'STERILIZE' && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs px-3 py-2"
-                        onClick={() => onStatusUpdate(batch.id, 'sterilize')}
-                        disabled={isUpdating}
-                    >
-                        {isUpdating ? '...' : `🔥 ${BATCH_LABELS.STERILIZE_BATCH}`}
-                    </Button>
-                )}
+                    {stage === 'INOCULATE' && (
+                        <button
+                            onClick={() => onStatusUpdate(batch.id, 'inoculate')}
+                            disabled={isUpdating}
+                            className="h-8 px-4 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-600/10 transition-all"
+                        >
+                            {isUpdating ? '...' : 'INOCULATE'}
+                        </button>
+                    )}
 
-                {stage === 'INOCULATE' && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs px-3 py-2"
-                        onClick={() => onStatusUpdate(batch.id, 'inoculate')}
-                        disabled={isUpdating}
-                    >
-                        {isUpdating ? '...' : '💉 Inoculate'}
-                    </Button>
-                )}
-
-                {/* Export Labels - Show when inoculated baglets exist */}
-                {(batch.bagletStatusCounts?.['INOCULATED'] ?? 0) > 0 && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10"
-                        onClick={() => {
-                            window.location.href = `/api/batches/${batch.id}/export-labels`;
-                        }}
-                    >
-                        📊 Export ({batch.bagletStatusCounts?.['INOCULATED'] ?? 0})
-                    </Button>
-                )}
+                    {getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to) > 0 && (
+                        <button
+                            onClick={() => {
+                                window.location.href = `/api/batches/${batch.id}/export-labels`;
+                            }}
+                            className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <FileText size={16} />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -1,35 +1,34 @@
-import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSql } from '@/lib/db';
 import { PlanBatchSchema } from '@/lib/validation-schemas';
 import { planBatch, getAllBatches } from '@/lib/batch-actions';
 
 
+// Force dynamic since we use query params and DB
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/batches
- * Returns all batches with baglet counts and status distribution
+ * Returns all batches with optional filtering
  */
-export async function GET() {
-  const DATABASE_URL = process.env.DATABASE_URL;
+export async function GET(request: NextRequest) {
+  const sql = getSql(true);
+  const searchParams = request.nextUrl.searchParams;
 
-  if (!DATABASE_URL) {
-    return NextResponse.json({ error: 'Database configuration missing' }, { status: 500 });
-  }
-
-  const sql = neon(DATABASE_URL);
+  const filters = {
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
+    activeOnly: searchParams.get('activeOnly') === 'true',
+    mushroomType: searchParams.get('mushroomType') || undefined,
+  };
 
   try {
-    // Delegate to business logic
-    const batches = await getAllBatches(sql);
+    // Delegate to business logic with filters
+    const batches = await getAllBatches(sql, filters);
 
-    console.log(`✅ Fetched ${batches.length} batches from database`);
+    console.log(`✅ Fetched ${batches.length} batches with filters:`, filters);
 
-    return NextResponse.json({ batches }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      }
-    });
+    return NextResponse.json({ batches });
 
   } catch (error: any) {
     console.error('❌ Database query failed:', error?.message);
@@ -42,13 +41,7 @@ export async function GET() {
  * Plans a new batch with baglets in a single transaction
  */
 export async function POST(request: Request) {
-  const DATABASE_URL = process.env.DATABASE_URL;
-
-  if (!DATABASE_URL) {
-    return NextResponse.json({ error: 'Database configuration missing' }, { status: 500 });
-  }
-
-  const sql = neon(DATABASE_URL);
+  const sql = getSql(true);
 
   try {
     const body = await request.json();

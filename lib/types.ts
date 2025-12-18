@@ -29,6 +29,7 @@ export type MushroomType = string;
 export interface Batch {
   id: string;
   mushroomType: MushroomType;
+  vendorName: string;
   substrateCode: string;
   substrateDescription: string;
   plannedBagletCount: number;
@@ -37,6 +38,8 @@ export interface Batch {
   preparedDate: Date;
   notes?: string;
   bagletStatusCounts?: Record<string, number>;
+  createdBy: string;
+  batchSequence: number;
 }
 
 export interface Baglet {
@@ -82,6 +85,7 @@ export interface StatusLogEntry {
 export interface BatchListItem {
   id: string;
   mushroomType: string;
+  vendorName: string;
   substrateCode: string;
   substrateDescription: string;
   plannedBagletCount: number;
@@ -89,6 +93,8 @@ export interface BatchListItem {
   createdDate: string;
   preparedDate: string;
   bagletStatusCounts: Record<string, number>;
+  createdBy: string;
+  batchSequence: number;
 }
 
 export interface BatchDetails {
@@ -96,7 +102,7 @@ export interface BatchDetails {
   farmId: string;
   farmName: string;
   preparedDate: string;
-  sequence: number;
+  batchSequence: number;
   mushroomType: string;
   mushroomId: string;
   strain: {
