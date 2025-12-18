@@ -171,86 +171,99 @@ export interface BagletWithDetails {
   substrate_id: string;
   harvest_count?: number;
   total_harvest_weight_g?: string;
+  latest_temp_c?: number | null;
+  latest_humidity_pct?: number | null;
+  latest_ph?: number | null;
+  logged_by?: string;
+  logged_timestamp?: Date;
+}
+
+// ============================================================
+// SHARED RETRIEVAL HELPERS (Private)
+// ============================================================
+
+/**
+ * Base query helper to ensure all baglet retrieval methods return consistent data.
+ */
+async function _fetchBagletsDetails(
+  sql: any,
+  filters: {
+    bagletId?: string;
+    batchId?: string;
+    status?: BagletStatus;
+    orderBy?: string;
+  }
+): Promise<BagletWithDetails[]> {
+  const { bagletId, batchId, status, orderBy = 'b.baglet_sequence' } = filters;
+
+  // Use a single query with conditional filters. 
+  // Combined with Neon/Next.js caching logic, this ensures consistency.
+  return await sql`
+    SELECT 
+      b.batch_id,
+      b.baglet_id,
+      b.baglet_sequence,
+      b.current_status,
+      b.latest_weight_g as weight_in_grams,
+      b.latest_temp_c,
+      b.latest_humidity_pct,
+      b.latest_ph,
+      b.status_updated_at,
+      b.logged_by,
+      b.logged_timestamp,
+      b.harvest_count,
+      b.total_harvest_weight_g,
+      m.mushroom_name,
+      ba.strain_code,
+      ba.substrate_id
+    FROM baglet b
+    JOIN batch ba ON b.batch_id = ba.batch_id
+    JOIN strain s ON ba.strain_code = s.strain_code
+    JOIN mushroom m ON s.mushroom_id = m.mushroom_id
+    WHERE b.is_deleted = FALSE
+    AND (${bagletId || null}::text IS NULL OR b.baglet_id = ${bagletId || null})
+    AND (${batchId || null}::text IS NULL OR b.batch_id = ${batchId || null})
+    AND (${status || null}::text IS NULL OR b.current_status = ${status || null})
+    ORDER BY 
+      CASE WHEN ${orderBy} = 'b.status_updated_at ASC' THEN b.status_updated_at END ASC,
+      CASE WHEN ${orderBy} = 'b.baglet_sequence' THEN b.baglet_sequence END ASC
+  `;
+}
+
+// ============================================================
+// EXPORTED ACTIONS
+// ============================================================
+
+/**
+ * Retrieves all baglets matching a specific status across all batches.
+ */
+export async function getBagletsByStatus(
+  sql: any,
+  status: BagletStatus
+): Promise<BagletWithDetails[]> {
+  return await _fetchBagletsDetails(sql, { status, orderBy: 'b.status_updated_at ASC' });
 }
 
 /**
  * Retrieves baglets for a batch filtered by status.
- * Reusable core query for various workflows (harvest, QR export, status logger, etc.)
- * 
- * @param sql - Neon SQL client
- * @param batchId - ID of the batch
- * @param status - Optional status filter (if not provided, returns all active baglets)
- * @returns Array of baglets with joined details
- * 
- * @example
- * // Get all inoculated baglets for harvest workflow
- * const baglets = await getBagletsByBatchAndStatus(sql, 'FPR-10122025-B01', 'INOCULATED');
- * 
- * @example
- * // Get all baglets in a batch (no status filter)
- * const allBaglets = await getBagletsByBatchAndStatus(sql, 'FPR-10122025-B01');
  */
 export async function getBagletsByBatchAndStatus(
   sql: any,
   batchId: string,
   status?: BagletStatus
 ): Promise<BagletWithDetails[]> {
-  // Single smart query with conditional status filter
-  // If status is provided, it filters; if not, the condition becomes "TRUE AND TRUE" which optimizes away
-  const query = sql`
-    SELECT 
-      b.batch_id,
-      b.baglet_id,
-      b.baglet_sequence,
-      b.current_status,
-      b.latest_weight_g as weight_in_grams,
-      b.status_updated_at,
-      m.mushroom_name,
-      ba.strain_code,
-      ba.substrate_id
-    FROM baglet b
-    JOIN batch ba ON b.batch_id = ba.batch_id
-    JOIN strain s ON ba.strain_code = s.strain_code
-    JOIN mushroom m ON s.mushroom_id = m.mushroom_id
-    WHERE b.batch_id = ${batchId}
-    AND (${status === undefined} OR b.current_status = ${status})
-    AND b.is_deleted = FALSE
-    ORDER BY b.baglet_sequence
-  `;
-
-  return await query;
+  return await _fetchBagletsDetails(sql, { batchId, status });
 }
 
 /**
- * Get single baglet by ID with full details including mushroom type and harvest data
- * Used by harvest validation and other single-baglet workflows
+ * Get single baglet by ID with full details.
  */
 export async function getBagletById(
   sql: any,
   bagletId: string
 ): Promise<BagletWithDetails | null> {
-  const result = await sql`
-    SELECT 
-      b.batch_id,
-      b.baglet_id,
-      b.baglet_sequence,
-      b.current_status,
-      b.harvest_count,
-      b.total_harvest_weight_g,
-      b.latest_weight_g as weight_in_grams,
-      b.status_updated_at,
-      m.mushroom_name,
-      ba.strain_code,
-      ba.substrate_id
-    FROM baglet b
-    JOIN batch ba ON b.batch_id = ba.batch_id
-    JOIN strain s ON ba.strain_code = s.strain_code
-    JOIN mushroom m ON s.mushroom_id = m.mushroom_id
-    WHERE b.baglet_id = ${bagletId}
-      AND b.is_deleted = FALSE
-  `;
-
-  return result.length > 0 ? result[0] : null;
+  const results = await _fetchBagletsDetails(sql, { bagletId });
+  return results.length > 0 ? results[0] : null;
 }
 
 // ============================================================
