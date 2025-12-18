@@ -199,7 +199,7 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                 <div>
                     <Select
                         key={`strain-${strains.length}`}
-                        label="Mushroom Strain *"
+                        label="Mushroom *"
                         options={[
                             { value: '', label: '-- Select Strain --' },
                             ...strains.map((strain) => ({

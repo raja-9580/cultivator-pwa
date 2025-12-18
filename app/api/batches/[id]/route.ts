@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '@/lib/db';
 import { getBatchDetails } from '@/lib/batch-actions';
 
 export const dynamic = 'force-dynamic';
@@ -12,21 +12,8 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const DATABASE_URL = process.env.DATABASE_URL;
-
-  if (!DATABASE_URL) {
-    return NextResponse.json(
-      { error: 'Database configuration missing' },
-      { status: 500 }
-    );
-  }
-
-  const sql = neon(DATABASE_URL, {
-    fetchOptions: {
-      cache: 'no-store',
-    },
-  });
-  const batchId = params.id;
+  const sql = getSql(true);
+  const { id: batchId } = await (params as any); // Next.js 15 params are async
 
   try {
     // Delegate to business logic

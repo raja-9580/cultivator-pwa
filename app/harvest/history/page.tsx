@@ -6,7 +6,8 @@ import { Calendar, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, X } from 
 import { Skeleton } from '@/components/ui/Skeleton';
 import { RefreshButton } from '@/components/ui/RefreshButton';
 import { HarvestHistoryResult, HarvestHistoryItem } from '@/lib/harvest-actions';
-import { formatDateToIST } from '@/lib/utils';
+import { calculateDateRange, TimeRangeMode } from '@/lib/time-utils';
+import QuickRangePicker from '@/components/ui/QuickRangePicker';
 
 type GroupBy = 'day' | 'week' | 'month';
 
@@ -16,7 +17,7 @@ export default function HarvestHistoryPage() {
     const [groupBy, setGroupBy] = useState<GroupBy>('day');
 
     // Filters: '1m', '3m', '6m'
-    const [filterMode, setFilterMode] = useState<'1m' | '3m' | '6m'>('1m');
+    const [filterMode, setFilterMode] = useState<TimeRangeMode>('1m');
 
     // Pagination: Limit number of Groups displayed (not items)
     const [groupLimit, setGroupLimit] = useState(20);
@@ -48,20 +49,11 @@ export default function HarvestHistoryPage() {
             setLoading(true);
 
             const params = new URLSearchParams();
+            const { from, to } = calculateDateRange(filterMode);
 
-            const now = new Date();
-            const start = new Date(now);
-
-            if (filterMode === '1m') {
-                start.setDate(now.getDate() - 30);
-            } else if (filterMode === '3m') {
-                start.setDate(now.getDate() - 90);
-            } else {
-                start.setDate(now.getDate() - 180); // 6m
-            }
-
-            params.set('startDate', formatDateToIST(start));
-            params.set('endDate', formatDateToIST(now));
+            params.set('startDate', from);
+            params.set('endDate', to);
+            if (forceRefresh) params.set('refresh', 'true');
             if (forceRefresh) params.set('refresh', 'true');
 
             const res = await fetch(`/api/harvest/history?${params}&_t=${Date.now()}`);
@@ -203,20 +195,12 @@ export default function HarvestHistoryPage() {
                 </div>
 
                 {/* Segmented Control for Time */}
-                <div className="bg-white/5 p-1 rounded-xl flex self-start md:self-auto w-full md:w-auto">
-                    {(['1m', '3m', '6m'] as const).map(mode => (
-                        <button
-                            key={mode}
-                            onClick={() => setFilterMode(mode)}
-                            className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wide ${filterMode === mode
-                                ? 'bg-accent-leaf text-black shadow-lg scale-100'
-                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                                }`}
-                        >
-                            {mode}
-                        </button>
-                    ))}
-                </div>
+                <QuickRangePicker
+                    activeMode={filterMode}
+                    onChange={setFilterMode}
+                    modes={['1m', '3m', '6m']}
+                    className="self-start md:self-auto w-full md:w-auto"
+                />
             </div>
 
             {/* HERO STATS: Zerodha Kite Style (Compact Total + Breakdown Logic) */}

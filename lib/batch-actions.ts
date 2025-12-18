@@ -20,7 +20,13 @@ import { APP_CONFIG } from './config';
  * @throws Error if query fails
  */
 export async function getAllBatches(
-  sql: NeonQueryFunction<false, false>
+  sql: NeonQueryFunction<false, false>,
+  filters?: {
+    startDate?: string;
+    endDate?: string;
+    activeOnly?: boolean;
+    mushroomType?: string;
+  }
 ): Promise<BatchListItem[]> {
   const batchesData = await sql`
     SELECT 
@@ -32,10 +38,12 @@ export async function getAllBatches(
       b.strain_code,
       b.baglet_count,
       b.logged_timestamp,
+      b.logged_by,
       f.farm_name,
       s.substrate_name,
-      st.strain_code,
+      st.strain_code as strain_display_code,
       m.mushroom_name,
+      sv.vendor_name,
       -- Subquery for actual baglet count
       (SELECT COUNT(*) FROM baglet WHERE batch_id = b.batch_id AND is_deleted = FALSE) as actual_baglet_count,
       -- Subquery for status distribution
@@ -53,7 +61,17 @@ export async function getAllBatches(
     LEFT JOIN substrate s ON b.substrate_id = s.substrate_id
     LEFT JOIN strain st ON b.strain_code = st.strain_code
     LEFT JOIN mushroom m ON st.mushroom_id = m.mushroom_id
+    LEFT JOIN strain_vendor sv ON st.strain_vendor_id = sv.strain_vendor_id
     WHERE b.is_deleted = FALSE
+    AND (${filters?.startDate || null}::date IS NULL OR b.prepared_date >= ${filters?.startDate || null}::date)
+    AND (${filters?.endDate || null}::date IS NULL OR b.prepared_date <= ${filters?.endDate || null}::date)
+    AND (${filters?.mushroomType || null}::text IS NULL OR m.mushroom_name = ${filters?.mushroomType || null})
+    AND (NOT ${filters?.activeOnly || false}::boolean OR EXISTS (
+        SELECT 1 FROM baglet 
+        WHERE batch_id = b.batch_id 
+        AND is_deleted = FALSE 
+        AND current_status NOT IN ('HARVESTED', 'DISPOSED', 'RECYCLED', 'DAMAGED')
+      ))
     ORDER BY b.prepared_date DESC, b.batch_sequence DESC
   `;
 
@@ -61,6 +79,7 @@ export async function getAllBatches(
   return batchesData.map((row) => ({
     id: row.batch_id,
     mushroomType: row.mushroom_name,
+    vendorName: row.vendor_name,
     substrateCode: row.substrate_id,
     substrateDescription: row.substrate_name,
     plannedBagletCount: row.baglet_count,
@@ -68,6 +87,8 @@ export async function getAllBatches(
     createdDate: row.logged_timestamp,
     preparedDate: row.prepared_date,
     bagletStatusCounts: row.baglet_status_counts || {},
+    createdBy: row.logged_by,
+    batchSequence: row.batch_sequence,
   }));
 }
 
@@ -240,7 +261,7 @@ export async function getBatchDetails(
     farmId: batch.farm_id,
     farmName: batch.farm_name,
     preparedDate: batch.prepared_date,
-    sequence: batch.batch_sequence,
+    batchSequence: batch.batch_sequence,
     mushroomType: batch.mushroom_name,
     mushroomId: batch.mushroom_id,
     strain: {
