@@ -299,6 +299,68 @@ export async function getBagletById(
   return results.length > 0 ? results[0] : null;
 }
 
+/**
+ * Get all status changes for a specific baglet.
+ */
+export async function getBagletStatusHistory(
+  sql: any,
+  bagletId: string
+) {
+  return await sql`
+    SELECT 
+      status as status,
+      previous_status as previousStatus,
+      notes,
+      logged_by as loggedBy,
+      status_timestamp as timestamp
+    FROM baglet_status_log
+    WHERE baglet_id = ${bagletId}
+    ORDER BY status_timestamp DESC
+  `;
+}
+
+/**
+ * Get all harvest records for a specific baglet.
+ */
+export async function getBagletHarvests(
+  sql: any,
+  bagletId: string
+) {
+  return await sql`
+    SELECT 
+      harvest_id as id,
+      harvest_weight_g as weight,
+      harvested_timestamp as date,
+      notes,
+      logged_by as loggedBy
+    FROM harvest
+    WHERE baglet_id = ${bagletId}
+    ORDER BY harvested_timestamp DESC
+  `;
+}
+
+/**
+ * Get all contamination findings for a specific baglet.
+ */
+export async function getBagletContaminationFindings(
+  sql: any,
+  bagletId: string
+) {
+  return await sql`
+    SELECT 
+      c.contamination_code as code, 
+      c.contamination_type as type, 
+      c.contaminant, 
+      bc.notes,
+      bc.logged_by as loggedBy,
+      bc.logged_timestamp as timestamp
+    FROM baglet_contamination bc
+    JOIN contamination_catalog c ON bc.contamination_code = c.contamination_code
+    WHERE bc.baglet_id = ${bagletId}
+    ORDER BY bc.logged_timestamp DESC
+  `;
+}
+
 // ============================================================
 // BAGLET CREATION LOGIC
 // ============================================================
