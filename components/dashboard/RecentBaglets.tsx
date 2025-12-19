@@ -119,7 +119,9 @@ export default function RecentBaglets({ baglets, loading }: { baglets: Baglet[],
                     ? (
                       <div>
                         <div>{baglet.metrics.temperature}°C</div>
-                        <div>{baglet.metrics.co2Level} ppm</div>
+                        {baglet.metrics.ph !== undefined && baglet.metrics.ph !== null && (
+                          <div>pH {baglet.metrics.ph}</div>
+                        )}
                       </div>
                     )
                     : '—'}

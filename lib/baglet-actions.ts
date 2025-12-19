@@ -176,6 +176,7 @@ export interface BagletWithDetails {
   latest_ph?: number | null;
   logged_by?: string;
   logged_timestamp?: Date;
+  prepared_date: Date;
 }
 
 // ============================================================
@@ -191,16 +192,28 @@ async function _fetchBagletsDetails(
     bagletId?: string;
     batchId?: string;
     status?: BagletStatus;
+    startDate?: string;
+    endDate?: string;
+    mushroomType?: string;
     orderBy?: string;
+    limit?: number;
   }
 ): Promise<BagletWithDetails[]> {
-  const { bagletId, batchId, status, orderBy = 'b.baglet_sequence' } = filters;
+  const {
+    bagletId,
+    batchId,
+    status,
+    startDate,
+    endDate,
+    mushroomType,
+    orderBy = 'b.logged_timestamp DESC',
+    limit
+  } = filters;
 
-  // Use a single query with conditional filters. 
-  // Combined with Neon/Next.js caching logic, this ensures consistency.
   return await sql`
     SELECT 
       b.batch_id,
+      b.baglet_id as id,
       b.baglet_id,
       b.baglet_sequence,
       b.current_status,
@@ -215,7 +228,8 @@ async function _fetchBagletsDetails(
       b.total_harvest_weight_g,
       m.mushroom_name,
       ba.strain_code,
-      ba.substrate_id
+      ba.substrate_id,
+      ba.prepared_date
     FROM baglet b
     JOIN batch ba ON b.batch_id = ba.batch_id
     JOIN strain s ON ba.strain_code = s.strain_code
@@ -224,15 +238,34 @@ async function _fetchBagletsDetails(
     AND (${bagletId || null}::text IS NULL OR b.baglet_id = ${bagletId || null})
     AND (${batchId || null}::text IS NULL OR b.batch_id = ${batchId || null})
     AND (${status || null}::text IS NULL OR b.current_status = ${status || null})
+    AND (${startDate || null}::date IS NULL OR ba.prepared_date >= ${startDate || null}::date)
+    AND (${endDate || null}::date IS NULL OR ba.prepared_date <= ${endDate || null}::date)
+    AND (${mushroomType || null}::text IS NULL OR m.mushroom_name = ${mushroomType || null})
     ORDER BY 
-      CASE WHEN ${orderBy} = 'b.status_updated_at ASC' THEN b.status_updated_at END ASC,
+      CASE WHEN ${orderBy} = 'ba.prepared_date ASC' THEN ba.prepared_date END ASC,
+      CASE WHEN ${orderBy} = 'ba.prepared_date DESC' THEN ba.prepared_date END DESC,
+      CASE WHEN ${orderBy} = 'b.status_updated_at DESC' THEN b.status_updated_at END DESC,
       CASE WHEN ${orderBy} = 'b.baglet_sequence' THEN b.baglet_sequence END ASC
+    LIMIT ${limit || null}
   `;
 }
 
 // ============================================================
 // EXPORTED ACTIONS
 // ============================================================
+
+/**
+ * Searches for baglets within specific date ranges.
+ */
+export async function searchBaglets(
+  sql: any,
+  params: {
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<BagletWithDetails[]> {
+  return await _fetchBagletsDetails(sql, { ...params, orderBy: 'b.status_updated_at DESC' });
+}
 
 /**
  * Retrieves all baglets matching a specific status across all batches.
