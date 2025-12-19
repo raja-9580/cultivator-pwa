@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultivator PWA Light Theme Mockup (Refined)</title>
+    <style>
+        :root {
+            --bg-main: #FDFDFD;
+            --bg-surface: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --accent-leaf: #10B981;
+            --accent-neon: #00FF9D;
+            --accent-orange: #F97316;
+            --accent-blue: #2563EB;
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+            --border-radius: 1.25rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: #f0f2f5;
+            color: var(--text-primary);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 750px;
+            background: var(--bg-surface);
+            border-radius: 48px;
+            border: 12px solid #222;
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #222;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            z-index: 100;
+        }
+
+        .screen-container {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-main);
+            padding-top: 25px;
+            /* for notch */
+        }
+
+        /* Navigation */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: 2rem;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--text-primary);
+            color: white;
+            border-color: var(--text-primary);
+        }
+
+        /* Layout Elements */
+        .header {
+            padding: 1.5rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+
+        /* Batches Screen */
+        .batch-card {
+            margin: 0.75rem 1rem;
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            background: white;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+        }
+
+        .batch-card:active {
+            transform: scale(0.97);
+        }
+
+        .mushroom-type {
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .batch-id {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: var(--accent-leaf);
+            margin: 0.5rem 0;
+            letter-spacing: -0.02em;
+        }
+
+        .batch-meta {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-primary {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: none;
+            background: var(--accent-leaf);
+            color: white;
+            font-weight: 900;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+        }
+
+        /* Batch Details Screen */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.4rem;
+            padding: 1rem;
+        }
+
+        .baglet-box {
+            aspect-ratio: 1;
+            border-radius: 0.4rem;
+            background: #F3F4F6;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: rgba(0, 0, 0, 0.2);
+        }
+
+        .baglet-ready {
+            background: #DCFCE7;
+            border-color: #86EFAC;
+            color: #166534;
+        }
+
+        .baglet-active {
+            background: #DBEAFE;
+            border-color: #93C5FD;
+            color: #1E40AF;
+        }
+
+        .baglet-warning {
+            background: #FFEDD5;
+            border-color: #FDBA74;
+            color: #9A3412;
+        }
+
+        .details-stats {
+            padding: 1rem;
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+        }
+
+        .mini-stat {
+            background: white;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            min-width: 100px;
+        }
+
+        .mini-stat-val {
+            font-size: 1.1rem;
+            font-weight: 900;
+        }
+
+        .mini-stat-lbl {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Utility */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .badge-green {
+            background: #ECFDF5;
+            color: #059669;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showScreen('batches')">Batches List</button>
+        <button class="tab-btn" onclick="showScreen('details')">Batch Details</button>
+    </div>
+
+    <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="screen-container">
+
+            <!-- BATCHES LIST SCREEN -->
+            <div id="batches" class="screen active">
+                <div class="header">
+                    <h1>Batches</h1>
+                    <div
+                        style="background: var(--accent-leaf); width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900;">
+                        +</div>
+                </div>
+
+                <div style="padding: 0.5rem 1rem; display: flex; gap: 0.5rem;">
+                    <div class="badge badge-green">Running: 8</div>
+                    <div class="badge" style="background: #F3F4F6; color: #666;">Total: 124</div>
+                </div>
+
+                <div class="batch-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="mushroom-type">Blue Oyster</span>
+                        <div style="font-size: 0.7rem; font-weight: 800; color: #DDD;">#42</div>
+                    </div>
+                    <div class="batch-id">OYST-24-0892</div>
+                    <div class="batch-meta">
+                        <span>Yesterday</span>
+                        <span style="color: #EEE;">•</span>
+                        <span>50 Baglets</span>
+                    </div>
+                    <button class="btn-primary">Prepare</button>
+                </div>
+
+                <div class="batch-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="mushroom-type">Lion's Mane</span>
+                        <div style="font-size: 0.7rem; font-weight: 800; color: #DDD;">#41</div>
+                    </div>
+                    <div class="batch-id">LION-24-0711</div>
+                    <div class="batch-meta">
+                        <span>3d ago</span>
+                        <span style="color: #EEE;">•</span>
+                        <span>24 Baglets</span>
+                    </div>
+                    <button class="btn-primary" style="background: #F97316;">Sterilize</button>
+                </div>
+
+                <div class="batch-card" style="opacity: 0.8;">
+                    <span class="mushroom-type">King Trumpet</span>
+                    <div class="batch-id" style="color: var(--text-secondary);">TRUM-24-0655</div>
+                    <div class="batch-meta">1 week ago • 40 Baglets</div>
+                </div>
+            </div>
+
+            <!-- BATCH DETAILS SCREEN -->
+            <div id="details" class="screen">
+                <div class="header">
+                    <div style="font-size: 1.2rem;" onclick="showScreen('batches')">←</div>
+                    <h1>OYST-24-0892</h1>
+                    <div style="font-size: 1.2rem;">⋮</div>
+                </div>
+
+                <div class="details-stats">
+                    <div class="mini-stat">
+                        <div class="mini-stat-val" style="color: var(--accent-leaf);">88%</div>
+                        <div class="mini-stat-lbl">Sterilized</div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-val">44/50</div>
+                        <div class="mini-stat-lbl">Count</div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-val" style="color: var(--accent-blue);">0</div>
+                        <div class="mini-stat-lbl">Inoculated</div>
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <!-- Generating a grid of 50 squares -->
+                    <div class="baglet-box baglet-ready">1</div>
+                    <div class="baglet-box baglet-ready">2</div>
+                    <div class="baglet-box baglet-ready">3</div>
+                    <div class="baglet-box baglet-ready">4</div>
+                    <div class="baglet-box baglet-ready">5</div>
+                    <div class="baglet-box baglet-ready">6</div>
+                    <div class="baglet-box baglet-ready">7</div>
+                    <div class="baglet-box baglet-ready">8</div>
+                    <div class="baglet-box baglet-ready">9</div>
+                    <div class="baglet-box baglet-ready">10</div>
+                    <div class="baglet-box baglet-active">11</div>
+                    <div class="baglet-box baglet-active">12</div>
+                    <div class="baglet-box baglet-active">13</div>
+                    <div class="baglet-box baglet-active">14</div>
+                    <div class="baglet-box">15</div>
+                    <div class="baglet-box">16</div>
+                    <div class="baglet-box">17</div>
+                    <div class="baglet-box">18</div>
+                    <div class="baglet-box baglet-warning">19</div>
+                    <div class="baglet-box baglet-warning">20</div>
+                    <div class="baglet-box">21</div>
+                    <div class="baglet-box">22</div>
+                    <div class="baglet-box">23</div>
+                    <div class="baglet-box">24</div>
+                    <div class="baglet-box">25</div>
+                </div>
+
+                <div style="padding: 1rem;">
+                    <div class="card"
+                        style="background: white; border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1rem; box-shadow: var(--shadow-sm);">
+                        <div
+                            style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                            Substrate Details</div>
+                        <div style="font-size: 0.9rem; font-weight: 500;">Hardwood sawdust, Wheat bran, Gypsum. 5lb
+                            bags.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+
+            // Find the button that was clicked and activate it
+            const clickedBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.innerText.toLowerCase().includes(id.substring(0, 3)));
+            if (clickedBtn) clickedBtn.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

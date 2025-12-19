@@ -45,16 +45,19 @@ export interface Batch {
 export interface Baglet {
   id: string;
   batchId: string;
+  sequence?: number;
   status: BagletStatus;
+  mushroomType?: string;
+  weight?: number | null;
   lastStatusChange: Date;
+  preparedDate?: string | Date;
   metrics?: Metric;
 }
 
 export interface Metric {
   temperature: number; // Celsius
   humidity: number; // Percentage
-  co2Level: number; // PPM
-  lightLevel: number; // Lux
+  ph?: number; // pH level
   recordedAt: Date;
 }
 

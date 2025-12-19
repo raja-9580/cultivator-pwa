@@ -154,5 +154,48 @@ graph TD
     
     style User fill:#f9f,stroke:#333,stroke-width:2px
     style DB fill:#bbf,stroke:#333,stroke-width:2px
-    style Views fill:#dfd,stroke:#333,stroke-width:2px
+    style {Views} fill:#dfd,stroke:#333,stroke-width:2px
 ```
+
+---
+
+## 8️⃣ 🚨 CRITICAL: Baglet Date Authority (Batch Prepare Date)
+
+> [!IMPORTANT]
+> **SOURCE OF TRUTH**: We strictly use `batch.prepared_date` as the single authoritative date for all Baglet age, history, and cohort calculations.
+
+| Factor | Consideration |
+| :--- | :--- |
+| **Primary Pivot** | Switched from `logged_timestamp` to `batch.prepared_date` |
+| **Why pivot** | Prevent "rebirthing" (heartbeats were overwriting system timestamps) |
+| **Impact on stats** | Range filters (1M, 3M, 6M) now correctly reflect production cohorts |
+| **Logic decision** | Age is calculated ONLY from the day the batch was started |
+
+➡️ **Final Decision**: The **Batch Preparation Date** is the absolute source of truth. Do not use system-level timestamps for business metrics.
+---
+
+## 9️⃣ Timezone Management — **IST (India Standard Time)**
+
+| Factor | Consideration |
+| :--- | :--- |
+| **Why IST** | The farm operation is physically located in India; logs must match lab clocks |
+| **DB standard** | Database stores all timestamps in UTC, but computed via `now_ist()` |
+| **Logic decision** | Never use raw `now()` in SQL to avoid server-region drift (UTC/US-East) |
+| **Implementation** | Custom SQL function `now_ist()` returns `(now() at time zone 'utc' at time zone 'ist')` |
+
+➡️ **Decision**: All business logs and status changes use **IST**. We use the custom `now_ist()` function for all timestamp insertions and updates to ensure lab-clock parity.
+
+---
+
+## 🔟 UI Philosophy — **Ultra-Dense (Reference: Baglet Monitoring Dashboard)**
+
+| Principle | Implementation |
+| :--- | :--- |
+| **Why Ultra-Dense** | Optimized for pro-lab environments where data speed > whitespace |
+| **Mobile Grid** | Stats (Total/Active/Health) grouped in single 3-column rows |
+| **Card Layout** | `rounded-2xl` with `bg-white/5` border for clear unit separation |
+| **High Contrast** | Metrics (Temp/Weight/ph) must use high-contrast white text |
+| **Explicit Labels** | All metrics use small bold uppercase labels (e.g. `WEIGHT`) |
+| **Visual Sync** | Range toggles must dim UI during "Syncing" state to show freshness |
+
+➡️ **Standard**: All future monitoring screens must follow the **Baglet Monitoring Dashboard** design language for consistency.

@@ -80,54 +80,55 @@ export default function BagletsList({ baglets }: BagletsListProps) {
                 </div>
 
                 {/* Mobile: Card List */}
-                <div className="md:hidden space-y-3">
+                <div className="md:hidden flex flex-col gap-3">
                     {filteredBaglets.map((baglet) => (
                         <div
                             key={baglet.id}
-                            className="bg-dark-surface-light/20 border border-gray-800/30 rounded-lg p-3"
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-colors space-y-3 shadow-sm shadow-black/20"
                         >
-                            <div className="flex items-start justify-between mb-2">
-                                <Link
-                                    href={`/baglets/${baglet.id}`}
-                                    className="text-sm font-medium text-accent-leaf hover:text-accent-sky transition-colors font-mono break-all"
-                                >
-                                    {baglet.id}
-                                </Link>
-                                <span
-                                    className={`text-xs px-2 py-1 rounded-md font-medium shrink-0 ml-2 ${STATUS_COLORS[baglet.status] || 'bg-gray-700 text-gray-300'
-                                        }`}
-                                >
-                                    {baglet.status}
-                                </span>
-                            </div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-start gap-3">
+                                    <Link
+                                        href={`/baglets/${baglet.id}`}
+                                        className="text-[11px] font-bold text-accent-neon-green hover:text-accent-neon-blue transition-colors font-mono break-all leading-relaxed"
+                                    >
+                                        {baglet.id}
+                                    </Link>
+                                    <span
+                                        className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter shrink-0 ${STATUS_COLORS[baglet.status] || 'bg-gray-700 text-gray-300'
+                                            }`}
+                                    >
+                                        {baglet.status}
+                                    </span>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mt-3">
-                                {baglet.weight !== null && (
-                                    <div className="flex justify-between border-b border-gray-800/30 pb-1">
-                                        <span className="text-gray-500">Weight</span>
-                                        <span className="text-gray-300">{baglet.weight}g</span>
-                                    </div>
-                                )}
-                                {baglet.temperature !== null && (
-                                    <div className="flex justify-between border-b border-gray-800/30 pb-1">
-                                        <span className="text-gray-500">Temp</span>
-                                        <span className="text-gray-300">{baglet.temperature}°C</span>
-                                    </div>
-                                )}
-                                {baglet.humidity !== null && (
-                                    <div className="flex justify-between border-b border-gray-800/30 pb-1">
-                                        <span className="text-gray-500">Humidity</span>
-                                        <span className="text-gray-300">{baglet.humidity}%</span>
-                                    </div>
-                                )}
-                                {baglet.ph !== undefined && baglet.ph !== null && (
-                                    <div className="flex justify-between border-b border-gray-800/30 pb-1">
-                                        <span className="text-gray-500">pH</span>
-                                        <span className="text-gray-300">{baglet.ph}</span>
-                                    </div>
-                                )}
+                                <div className="flex items-start justify-between gap-2 pt-3 border-t border-white/5">
+                                    {baglet.weight !== null && (
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-[7px] text-gray-500 font-bold uppercase tracking-[0.1em] mb-0.5 truncate">Weight</span>
+                                            <span className="text-[10px] font-mono font-black text-white truncate">{baglet.weight}g</span>
+                                        </div>
+                                    )}
+                                    {baglet.temperature !== null && (
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-[7px] text-gray-500 font-bold uppercase tracking-[0.1em] mb-0.5 truncate">Temp</span>
+                                            <span className="text-[10px] font-mono font-black text-gray-200 truncate">{baglet.temperature}°C</span>
+                                        </div>
+                                    )}
+                                    {baglet.humidity !== null && (
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-[7px] text-gray-500 font-bold uppercase tracking-[0.1em] mb-0.5 truncate">Humid</span>
+                                            <span className="text-[10px] font-mono font-black text-gray-200 truncate">{baglet.humidity}%</span>
+                                        </div>
+                                    )}
+                                    {baglet.ph !== undefined && baglet.ph !== null && (
+                                        <div className="flex flex-col min-w-0 flex-1 pl-1 border-l border-white/5">
+                                            <span className="text-[7px] text-gray-500 font-bold uppercase tracking-[0.1em] mb-0.5 truncate">pH</span>
+                                            <span className="text-[10px] font-mono font-black text-gray-200 truncate">{baglet.ph}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-
                         </div>
                     ))}
                     {filteredBaglets.length === 0 && (
