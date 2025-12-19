@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, QrCode, Weight, FileText, CheckCircle, TrendingUp, Package, History } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -32,8 +32,11 @@ interface ReadyBaglet {
     harvestCount: number;
 }
 
-export default function HarvestPage() {
+function HarvestContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const autoBagletId = searchParams.get('bagletId');
+
     const [searchId, setSearchId] = useState('');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -46,7 +49,12 @@ export default function HarvestPage() {
 
     useEffect(() => {
         loadStatsAndReady();
-    }, []);
+
+        if (autoBagletId) {
+            setSearchId(autoBagletId);
+            handleSearch(autoBagletId);
+        }
+    }, [autoBagletId]);
 
     const loadStatsAndReady = async () => {
         try {
@@ -382,5 +390,23 @@ export default function HarvestPage() {
                 onScan={handleScan}
             />
         </div>
+    );
+}
+
+export default function HarvestPage() {
+    return (
+        <Suspense fallback={
+            <div className="max-w-4xl mx-auto p-4 pt-13 md:pt-6 space-y-4">
+                <div className="h-10 w-48 bg-white/5 animate-pulse rounded-lg" />
+                <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                </div>
+            </div>
+        }>
+            <HarvestContent />
+        </Suspense>
     );
 }

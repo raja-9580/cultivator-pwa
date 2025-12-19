@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, QrCode, AlertTriangle, Bug, CheckCircle, Microscope, History } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -37,8 +37,11 @@ interface ReadyBaglet {
     timeLabel: string;
 }
 
-export default function CRCPage() {
+function CRCContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const autoBagletId = searchParams.get('bagletId');
+
     const [searchId, setSearchId] = useState('');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [baglet, setBaglet] = useState<BagletDetails | null>(null);
@@ -46,10 +49,15 @@ export default function CRCPage() {
     const [readyBaglets, setReadyBaglets] = useState<ReadyBaglet[]>([]);
     const [statsLoading, setStatsLoading] = useState(true);
 
-    // Initial Load
+    // Initial Load & Auto-Trigger
     useEffect(() => {
         loadDashboard();
-    }, []);
+
+        if (autoBagletId) {
+            setSearchId(autoBagletId);
+            handleSearch(autoBagletId);
+        }
+    }, [autoBagletId]);
 
     const loadDashboard = async () => {
         try {
@@ -92,14 +100,8 @@ export default function CRCPage() {
         setIsScannerOpen(false);
     };
 
-    // Placeholder for actual analysis logic
     const handleStartAnalysis = () => {
         if (!baglet) return;
-        // In next step we will implement the actual Analysis Form / Logic
-        // For now, redirect or show modal? 
-        // Per user request, this is just the "Main Page" skeleton.
-        // We can route to /crc/analyze/[id] OR show a modal. 
-        // Assuming specific route based on complexity.
         router.push(`/crc/analyze/${baglet.id}`);
     };
 
@@ -191,7 +193,7 @@ export default function CRCPage() {
                                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
                                     <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-bold">Previous Findings</p>
                                     <ul className="space-y-1">
-                                        {baglet.findings.map((f, i) => (
+                                        {baglet.findings.map((f: ContaminationFinding, i: number) => (
                                             <li key={i} className="text-sm text-red-300 flex items-center gap-2">
                                                 <Bug size={14} />
                                                 {f.contamination_type}: {f.contaminant}
@@ -290,5 +292,23 @@ export default function CRCPage() {
                 onScan={handleScan}
             />
         </div>
+    );
+}
+
+export default function CRCPage() {
+    return (
+        <Suspense fallback={
+            <div className="max-w-4xl mx-auto p-4 pt-13 md:pt-6 space-y-4">
+                <div className="h-10 w-48 bg-white/5 animate-pulse rounded-lg" />
+                <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                    <div className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                </div>
+            </div>
+        }>
+            <CRCContent />
+        </Suspense>
     );
 }
