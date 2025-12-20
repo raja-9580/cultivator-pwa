@@ -252,7 +252,7 @@ export default function BatchesPage() {
       <div className="flex flex-col gap-3 mb-5">
         <div className="flex flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter shrink-0 italic">Batches</h1>
+            <h1 className="text-lg font-black text-white tracking-tight shrink-0">Batches</h1>
             {!loading && batches.length > 0 && (
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 shrink-0 tabular-nums">
                 <span className="text-base font-black text-white leading-none">{batches.length}</span>
