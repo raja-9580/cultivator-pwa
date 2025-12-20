@@ -37,7 +37,7 @@ export default function BottomNav() {
             label: 'More',
             icon: '☰',
             // Active if any of the hidden paths are active
-            active: ['/harvest', '/crc', '/reports', '/profile'].some(path => pathname?.startsWith(path)),
+            active: ['/harvest', '/crc', '/profile'].some(path => pathname?.startsWith(path)),
             isButton: true
         },
     ];
@@ -45,7 +45,6 @@ export default function BottomNav() {
     const moreItems = [
         { href: '/harvest', label: '🌿 Harvest', active: pathname === '/harvest' },
         { href: '/crc', label: '🧪 CRC Analysis', active: pathname?.startsWith('/crc') },
-        { href: '/reports', label: '📈 Reports', active: pathname === '/reports' },
         { href: '/profile', label: '👤 Profile', active: pathname === '/profile' },
     ];
 

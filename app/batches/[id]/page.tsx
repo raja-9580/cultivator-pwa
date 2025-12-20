@@ -201,7 +201,7 @@ export default function BatchDetailPage() {
                         <span className="hidden sm:inline">Back</span>
                     </Button>
                     <div className="flex items-baseline gap-2">
-                        <h1 className="text-2xl md:text-3xl font-black text-accent-leaf tracking-tighter">
+                        <h1 className="text-xl md:text-2xl font-black text-accent-leaf tracking-tight">
                             {batch.id}
                         </h1>
                         <span className="text-sm font-bold text-gray-600 tabular-nums">#{batch.batchSequence}</span>
