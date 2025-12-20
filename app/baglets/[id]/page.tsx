@@ -184,6 +184,15 @@ export default function BagletDetailPage() {
                         </div>
                     </Card>
 
+                    {/* Mobile Only Actions: Moved here for better UX after metrics */}
+                    <div className="lg:hidden">
+                        <BagletActions
+                            bagletId={baglet.id}
+                            currentStatus={baglet.status as BagletStatus}
+                            onStatusUpdate={fetchBagletDetails}
+                        />
+                    </div>
+
                     {/* Specialized Cards Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Yield / Harvest Card */}
@@ -307,12 +316,14 @@ export default function BagletDetailPage() {
                 {/* Right Column: Actions & Technical Context */}
                 <div className="space-y-6">
 
-                    {/* Standard Transitions Component */}
-                    <BagletActions
-                        bagletId={baglet.id}
-                        currentStatus={baglet.status as BagletStatus}
-                        onStatusUpdate={fetchBagletDetails}
-                    />
+                    {/* Desktop Only Actions: Hidden on mobile as it's moved above */}
+                    <div className="hidden lg:block">
+                        <BagletActions
+                            bagletId={baglet.id}
+                            currentStatus={baglet.status as BagletStatus}
+                            onStatusUpdate={fetchBagletDetails}
+                        />
+                    </div>
 
                     {/* Batch & Lab Context Card */}
                     <Card className="p-6 space-y-6">
