@@ -1,6 +1,6 @@
 # Cultivator 🍄
 
-**Cultivator** is a private, internal operational tool built for managing mushroom farm production cycles. It allows farm staff to track batches from sterilization to harvest, ensuring full traceability and replacing manual logbooks with a strictly defined digital workflow..
+**Cultivator** is a private, internal operational tool built for managing mushroom farm production cycles. It allows farm staff to track batches from sterilization to harvest, ensuring full traceability and replacing manual logbooks with a strictly defined digital workflow...
 
 ## 🛠️ Stack & Architecture
 *(See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for deep-dive on decisions, costs, and limits)*
