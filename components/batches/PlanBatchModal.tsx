@@ -166,7 +166,12 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                             {creationResult.substrate.mediums_for_batch.map((m: any, idx: number) => (
                                 <div key={`m-${idx}`} className="flex justify-between border-b border-gray-700/50 pb-1 last:border-0">
                                     <span className="text-gray-300">{m.medium_name}</span>
-                                    <span className="text-accent-sky font-mono">{(m.qty_g / 1000).toFixed(2)} kg</span>
+                                    <span className="text-accent-sky font-mono">
+                                        {m.qty_g < 1000
+                                            ? `${m.qty_g.toFixed(0)} g`
+                                            : `${(m.qty_g / 1000).toFixed(2)} kg`
+                                        }
+                                    </span>
                                 </div>
                             ))}
 
@@ -177,7 +182,10 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                                 <div key={`s-${idx}`} className="flex justify-between border-b border-gray-700/50 pb-1 last:border-0">
                                     <span className="text-gray-300">{s.supplement_name}</span>
                                     <span className="text-accent-sky font-mono">
-                                        {s.qty.toLocaleString()} {s.unit}
+                                        {s.unit.toLowerCase() === 'ml' && s.qty >= 1000
+                                            ? `${(s.qty / 1000).toFixed(2)} L`
+                                            : `${s.qty.toLocaleString()} ${s.unit}`
+                                        }
                                     </span>
                                 </div>
                             ))}

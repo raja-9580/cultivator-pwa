@@ -42,12 +42,12 @@ export default function BatchPreparationGrid({ isOpen, onClose, batch, onUpdate 
             ...(batch.substrate.mediumsForBatch || []).map(m => ({
                 id: `medium-${m.medium_id}`,
                 name: m.medium_name,
-                quantity: `${(m.qty_g / 1000).toFixed(2)} kg`,
+                quantity: m.qty_g < 1000 ? `${m.qty_g.toFixed(0)} g` : `${(m.qty_g / 1000).toFixed(2)} kg`,
             })),
             ...(batch.substrate.supplementsForBatch || []).map(s => ({
                 id: `supplement-${s.supplement_id}`,
                 name: s.supplement_name,
-                quantity: `${s.qty} ${s.unit}`,
+                quantity: s.unit.toLowerCase() === 'ml' && s.qty >= 1000 ? `${(s.qty / 1000).toFixed(2)} L` : `${s.qty} ${s.unit}`,
             })),
         ];
     }, [batch]);

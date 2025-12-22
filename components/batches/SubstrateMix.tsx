@@ -51,7 +51,7 @@ export default function SubstrateMix({
                             <span className="text-xl">🌾</span>
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide leading-tight">
-                                    Per Baglet
+                                    Per 1kg Substrate
                                 </h3>
                             </div>
                         </div>
@@ -92,7 +92,10 @@ export default function SubstrateMix({
                                         >
                                             <span className="text-sm text-gray-300">{supplement.supplement_name}</span>
                                             <span className="text-sm font-semibold text-accent-leaf tabular-nums">
-                                                {supplement.qty.toFixed(1)} {supplement.unit}
+                                                {supplement.unit.toLowerCase() === 'ml' && supplement.qty >= 1000
+                                                    ? `${(supplement.qty / 1000).toFixed(2)} L`
+                                                    : `${supplement.qty.toFixed(1)} ${supplement.unit}`
+                                                }
                                             </span>
                                         </div>
                                     ))}
@@ -151,7 +154,10 @@ export default function SubstrateMix({
                                         >
                                             <span className="text-sm text-gray-300 font-medium">{supplement.supplement_name}</span>
                                             <span className="text-sm font-bold text-accent-leaf tabular-nums">
-                                                {supplement.qty.toFixed(1)} {supplement.unit}
+                                                {supplement.unit.toLowerCase() === 'ml' && supplement.qty >= 1000
+                                                    ? `${(supplement.qty / 1000).toFixed(2)} L`
+                                                    : `${supplement.qty.toFixed(1)} ${supplement.unit}`
+                                                }
                                             </span>
                                         </div>
                                     ))}

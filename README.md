@@ -72,7 +72,11 @@ We follow a "Feature-First" organization to keep related code together:
     *   You will be auto-logged in.
     *   Camera/Scanner will work (HTTPS).
 
-## 🚀 Deployment
 
-For production deployment instructions (specifically for Vercel + Neon DB), please refer to the deployment guide:
-👉 **[Deployment Guide](docs/DEPLOYMENT.md)**
+## 📚 Documentation
+
+Key documentation for ongoing development and operations:
+
+*   **[Deployment Guide](docs/DEPLOYMENT.md)**: Production deployment instructions.
+*   **[Architecture Deep Dive](docs/ARCHITECTURE.md)**: Decisions, costs, and limits.
+*   **[Substrate & Expansion Logic](docs/substrate-expansion-logic.md)**: Detailed explanation of Substrate recipes and Expansion Ratio calculations.

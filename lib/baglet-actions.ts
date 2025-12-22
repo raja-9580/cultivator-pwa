@@ -1,6 +1,6 @@
-
 import { BagletStatus } from './types';
 import { INITIAL_BAGLET_STATUS } from './baglet-workflow';
+import { APP_CONFIG } from './config';
 
 interface UpdateStatusParams {
   bagletId: string;
@@ -9,6 +9,7 @@ interface UpdateStatusParams {
   newStatus: BagletStatus;
   notes?: string;
   user?: string;
+  skipCalculation?: boolean;
 }
 
 /**
@@ -66,6 +67,13 @@ export async function updateBagletStatus(
       ${user || 'system'}
     )
   `;
+
+  if (!params.skipCalculation) {
+    // Fire-and-forget calculation check (don't await to keep UI snappy)
+    checkAndCalculateExpansionRatio(sql, batchId).catch(err =>
+      console.error('Failed to calculate expansion ratio:', err)
+    );
+  }
 }
 
 
@@ -97,6 +105,19 @@ export async function updateBagletMetrics(
       logged_timestamp = now_ist() 
     WHERE baglet_id = ${bagletId}
   `;
+
+  // Fetch batchId for the baglet to run calculation
+  // (Optimization: We could pass batchId if caller knows it, but fetching ensures safety)
+  try {
+    const b = await sql`SELECT batch_id FROM baglet WHERE baglet_id = ${bagletId}`;
+    if (b.length > 0) {
+      checkAndCalculateExpansionRatio(sql, b[0].batch_id).catch(err =>
+        console.error('Failed to calculate expansion ratio:', err)
+      );
+    }
+  } catch (e) {
+    console.warn('Could not trigger expansion calc for metrics update', e);
+  }
 }
 
 
@@ -420,4 +441,80 @@ export async function createBagletWithLog(
       ${notes}, ${createdBy}, now_ist()
     )
   `;
+}
+
+/**
+ * Checks if batch preparation is complete and calculates the actual expansion ratio.
+ * Triggered on every baglet update.
+ * 
+ * Logic:
+ * 1. Checks if 0 baglets remain in 'PLANNED' status.
+ * 2. Sums weights of ALL baglets in the batch (including deleted/damaged).
+ * 3. Calculates 'Dry Input' based on original plan and expected ratio.
+ * 4. Derives 'Actual Ratio' = Total Actual Weight / Total Dry Input.
+ * 5. Updates the batch record.
+ */
+export async function checkAndCalculateExpansionRatio(
+  sql: any,
+  batchId: string
+): Promise<void> {
+
+  // 1. Fetch baglet data (Status check + Weights) in ONE query
+  const baglets = await sql`
+    SELECT current_status, latest_weight_g
+    FROM baglet
+    WHERE batch_id = ${batchId}
+      AND is_deleted = FALSE
+  `;
+
+  // Check if any remain PLANNED
+  const hasPlanned = baglets.some((b: any) => b.current_status === 'PLANNED');
+
+  if (hasPlanned) {
+    return;
+  }
+
+  // Filter for valid weights
+  const weighedBaglets = baglets.filter((b: any) => b.latest_weight_g !== null);
+
+  if (weighedBaglets.length === 0) {
+    return;
+  }
+
+  // 3. Fetch Batch Planning Details & Substrate Ratio (Joined)
+  const batchData = await sql`
+     SELECT 
+       b.baglet_count, 
+       b.baglet_weight_g, 
+       b.substrate_id,
+       s.expected_expansion_ratio
+     FROM batch b
+     LEFT JOIN substrate s ON b.substrate_id = s.substrate_id
+     WHERE b.batch_id = ${batchId}
+  `;
+  const batch = batchData[0];
+  const expectedRatio = parseFloat(batch.expected_expansion_ratio || APP_CONFIG.DEFAULT_EXPANSION_RATIO);
+
+
+  // 5. Calculate Metrics
+  const totalActualWeightG = weighedBaglets.reduce((sum: number, b: any) => sum + parseFloat(b.latest_weight_g), 0);
+  const totalActualWeightKg = totalActualWeightG / 1000;
+
+  // Dry Input = (Target Wet Weight) / (Expected Ratio)
+  const targetBagletWeightG = batch.baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G;
+  const totalTargetWetWeightKg = (batch.baglet_count * targetBagletWeightG) / 1000;
+  // Protect against division by zero (though default config prevents this)
+  const totalDryInputKg = totalTargetWetWeightKg / expectedRatio;
+
+  // Actual Ratio = Actual Wet / Dry Input
+  const actualExpansionRatio = totalActualWeightKg / totalDryInputKg;
+
+  // 6. Update Batch
+  await sql`
+    UPDATE batch
+    SET actual_expansion_ratio = ${actualExpansionRatio.toFixed(1)}
+    WHERE batch_id = ${batchId}
+  `;
+
+  console.log(`✅ Calculated Actual Expansion Ratio for ${batchId}: ${actualExpansionRatio.toFixed(2)}`);
 }
