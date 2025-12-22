@@ -5,8 +5,10 @@ import { z } from 'zod';
  * These can be reused on both frontend and backend
  */
 
+import { APP_CONFIG } from './config';
+
 export const PlanBatchSchema = z.object({
-    farm_id: z.string().optional().default('FPR'),
+    farm_id: z.string().optional().default(APP_CONFIG.DEFAULT_FARM_ID),
     prepared_date: z.string().optional(),
     strain_code: z.string().min(1, 'Strain code is required'),
     substrate_id: z.string().min(1, 'Substrate ID is required'),

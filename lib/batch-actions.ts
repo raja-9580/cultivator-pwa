@@ -368,15 +368,12 @@ export async function planBatch(
 
     const strainInfo: StrainInfo = strainCheck[0] as StrainInfo;
 
-    // 2. Validate substrate_id and get substrate mix info from v_substrate_full
-    // IMPORTANT: v_substrate_full returns mediums and supplements as JSON arrays
+    // 2. Validate substrate_id and get substrate info from table
     const substrateCheck = await sql`
       SELECT
         substrate_id,
-        substrate_name,
-        mediums,
-        supplements
-      FROM v_substrate_full
+        substrate_name
+      FROM substrate
       WHERE substrate_id = ${substrate_id}
     `;
 
@@ -384,12 +381,36 @@ export async function planBatch(
       throw new Error(`Invalid substrate_id: ${substrate_id}`);
     }
 
-    // Extract substrate info (view already returns JSON arrays)
+    // Fetch mediums
+    const mediumsData = await sql`
+        SELECT sm.medium_id, m.medium_name, sm.qty_g
+        FROM substrate_medium sm
+        JOIN medium m ON sm.medium_id = m.medium_id
+        WHERE sm.substrate_id = ${substrate_id}
+    `;
+
+    // Fetch supplements
+    const supplementsData = await sql`
+        SELECT ss.supplement_id, s.supplement_name, ss.qty, s.measure_type
+        FROM substrate_supplement ss
+        JOIN supplement s ON ss.supplement_id = s.supplement_id
+        WHERE ss.substrate_id = ${substrate_id}
+    `;
+
+    // Extract substrate info
     const substrateInfo: SubstrateInfo = {
       substrate_id: substrateCheck[0].substrate_id,
       substrate_name: substrateCheck[0].substrate_name,
-      mediums: substrateCheck[0].mediums || [],
-      supplements: substrateCheck[0].supplements || [],
+      mediums: mediumsData.map(m => ({
+        medium_id: m.medium_id,
+        medium_name: m.medium_name,
+        qty_g: parseFloat(m.qty_g)
+      })),
+      supplements: supplementsData.map(s => ({
+        supplement_id: s.supplement_id,
+        supplement_name: s.supplement_name,
+        qty: parseFloat(s.qty)
+      })),
     };
 
     // 3. Calculate batch_sequence

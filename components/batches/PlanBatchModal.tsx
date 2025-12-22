@@ -42,6 +42,7 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
     const userEmail = session?.user?.email || '';
 
     const [formData, setFormData] = useState({
+        farm_id: APP_CONFIG.DEFAULT_FARM_ID,
         strain_code: '',
         substrate_id: '',
         prepared_date: new Date().toISOString().split('T')[0],
@@ -124,6 +125,7 @@ export default function PlanBatchModal({ isOpen, onClose, onSuccess }: PlanBatch
                 // Don't close yet, show success view
                 // Reset form
                 setFormData({
+                    farm_id: APP_CONFIG.DEFAULT_FARM_ID,
                     strain_code: '',
                     substrate_id: '',
                     prepared_date: new Date().toISOString().split('T')[0],

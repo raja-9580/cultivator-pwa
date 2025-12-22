@@ -11,7 +11,7 @@ export const APP_CONFIG = {
     DEFAULT_BAGLET_WEIGHT_G: 2500,
 
     // Farm Configuration
-    DEFAULT_FARM_ID: 'FPR',
+    DEFAULT_FARM_ID: 'PR',
 
     // Pagination
     DEFAULT_PAGE_SIZE: 20,
