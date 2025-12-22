@@ -69,7 +69,7 @@ function ProfileContent() {
                     </>
                 ) : (
                     <div className="text-center py-6">
-                        <p className="text-gray-400 mb-6">Sign in to access your farm management tools.</p>
+                        <p className="text-gray-400 mb-6">Sign in to access Cultivator</p>
                         <Button
                             onClick={() => signIn('google', { callbackUrl: searchParams.get('callbackUrl') || '/' })}
                             className="w-full bg-white text-black hover:bg-gray-200 flex items-center justify-center gap-2"

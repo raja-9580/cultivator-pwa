@@ -4,6 +4,12 @@ CREATE OR REPLACE FUNCTION now_ist() RETURNS TIMESTAMP LANGUAGE sql AS $$
   SELECT NOW() AT TIME ZONE 'Asia/Kolkata';
 $$;
 
+-- farm
+CREATE TABLE farm (
+  farm_id TEXT PRIMARY KEY,
+  farm_name TEXT
+);
+
 -- mushroom
 CREATE TABLE mushroom (
   mushroom_id TEXT PRIMARY KEY,
@@ -20,33 +26,44 @@ CREATE TABLE strain_vendor (
 CREATE TABLE strain (
   strain_code TEXT PRIMARY KEY,
   mushroom_id TEXT NOT NULL REFERENCES mushroom(mushroom_id),
-  strain_vendor_id TEXT NOT NULL REFERENCES strain_vendor(strain_vendor_id)
-);
-
--- substrate master
-CREATE TABLE substrate (
-  substrate_id TEXT PRIMARY KEY,
-  substrate_name TEXT NOT NULL
+  strain_vendor_id TEXT NOT NULL REFERENCES strain_vendor(strain_vendor_id),
+  -- strain_desc: Detailed description of strain characteristics, genetics, 
+-- growing conditions, expected yields, and other relevant cultivation information
+  strain_desc TEXT
 );
 
 -- medium master
 CREATE TABLE medium (
-  medium_id TEXT PRIMARY KEY,
+  medium_id INTEGER PRIMARY KEY,
   medium_name TEXT NOT NULL
 );
 
 -- supplements master
 CREATE TABLE supplement (
-  supplement_id TEXT PRIMARY KEY,
+  supplement_id INTEGER PRIMARY KEY,
   supplement_name TEXT NOT NULL,
   measure_type TEXT NOT NULL  -- 'g' or 'ml'
+);
+
+-- substrate master
+-- substrate_desc: Detailed description of the substrate composition and purpose
+-- expected_expansion_ratio: Typical expected expansion during preparation (planning assumption)
+-- is_test: Identifies whether this is a test/experimental substrate
+-- origin_substrate_id: Reference to the original substrate when derived (e.g., test promoted to prod)
+CREATE TABLE substrate (
+  substrate_id TEXT PRIMARY KEY,
+  substrate_name TEXT NOT NULL,
+  substrate_desc TEXT,
+  is_test BOOLEAN DEFAULT FALSE,
+  expected_expansion_ratio NUMERIC DEFAULT 2.5,
+  origin_substrate_id TEXT REFERENCES substrate(substrate_id)
 );
 
 -- substrate mediums
 CREATE TABLE substrate_medium (
   id SERIAL PRIMARY KEY,
   substrate_id TEXT NOT NULL REFERENCES substrate(substrate_id),
-  medium_id TEXT NOT NULL REFERENCES medium(medium_id),
+  medium_id INTEGER NOT NULL REFERENCES medium(medium_id),
   qty_g NUMERIC NOT NULL
 );
 
@@ -54,26 +71,21 @@ CREATE TABLE substrate_medium (
 CREATE TABLE substrate_supplement (
   id SERIAL PRIMARY KEY,
   substrate_id TEXT NOT NULL REFERENCES substrate(substrate_id),
-  supplement_id TEXT NOT NULL REFERENCES supplement(supplement_id),
+  supplement_id INTEGER NOT NULL REFERENCES supplement(supplement_id),
   qty NUMERIC NOT NULL
-);
-
--- farm
-CREATE TABLE farm (
-  farm_id TEXT PRIMARY KEY,
-  farm_name TEXT
 );
 
 -- batch
 CREATE TABLE batch (
   batch_id TEXT PRIMARY KEY,
   farm_id TEXT NOT NULL REFERENCES farm(farm_id),
-  prepared_date DATE NOT NULL,
-  batch_sequence INT NOT NULL,
   substrate_id TEXT NOT NULL REFERENCES substrate(substrate_id),
   strain_code TEXT NOT NULL REFERENCES strain(strain_code),
+  batch_sequence INT NOT NULL,
+  prepared_date DATE NOT NULL,
   baglet_count INT DEFAULT 0,
   baglet_weight_g INT DEFAULT 2500,
+  actual_expansion_ratio NUMERIC,
   logged_by TEXT,
   logged_timestamp TIMESTAMP DEFAULT now_ist(),
   is_deleted BOOLEAN DEFAULT FALSE
@@ -154,11 +166,12 @@ CREATE TABLE baglet_contamination (
 
 CREATE VIEW v_strain_full AS
 SELECT
-    s.strain_code,
+    s.strain_code,  
     m.mushroom_id,
     m.mushroom_name,
     sv.strain_vendor_id,
-    sv.vendor_name
+    sv.vendor_name,
+    s.strain_desc
 FROM strain s
 JOIN mushroom m
     ON s.mushroom_id = m.mushroom_id
@@ -179,10 +192,29 @@ SELECT
   ss.supplement_id,
   sp.supplement_name,
   ss.qty AS supplement_qty,
-  sp.measure_type AS supplement_unit
+  sp.measure_type AS supplement_unit,
+  s.is_test,
+  s.expected_expansion_ratio,
+  s.origin_substrate_id,
+  s.substrate_desc
 FROM substrate s
 LEFT JOIN substrate_medium sm ON s.substrate_id = sm.substrate_id
 LEFT JOIN medium m ON sm.medium_id = m.medium_id
 LEFT JOIN substrate_supplement ss ON s.substrate_id = ss.substrate_id
 LEFT JOIN supplement sp ON ss.supplement_id = sp.supplement_id;
 
+CREATE TABLE substrate_expansion_history (
+  expansion_history_id BIGSERIAL PRIMARY KEY,
+
+  substrate_id TEXT NOT NULL
+    REFERENCES substrate(substrate_id),
+
+  old_expected_ratio NUMERIC(5,2) NOT NULL,
+  new_expected_ratio NUMERIC(5,2) NOT NULL,
+
+  change_reason TEXT,
+  -- Example: "Observed avg ~2.3 across 5 batches (Oct 2025)"
+
+  changed_by TEXT,
+  changed_at TIMESTAMPTZ DEFAULT now()
+);

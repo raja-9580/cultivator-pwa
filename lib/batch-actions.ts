@@ -171,58 +171,20 @@ export async function getBatchDetails(
 
   const batch = batchData[0];
 
-  // Fetch substrate mix details - mediums
-  const mediumsData = await sql`
-    SELECT
-      sm.medium_id,
-      m.medium_name,
-      sm.qty_g
-    FROM substrate_medium sm
-    JOIN medium m ON sm.medium_id = m.medium_id
-    WHERE sm.substrate_id = ${batch.substrate_id}
-    ORDER BY sm.medium_id
-  `;
-
-  const mediumsArray = mediumsData.map((m) => ({
-    medium_id: m.medium_id,
-    medium_name: m.medium_name,
-    qty_g: parseFloat(m.qty_g || 0),
-  }));
-
-  // Fetch substrate mix details - supplements
-  const supplementsData = await sql`
-    SELECT
-      ss.supplement_id,
-      s.supplement_name,
-      ss.qty,
-      s.measure_type as unit
-    FROM substrate_supplement ss
-    JOIN supplement s ON ss.supplement_id = s.supplement_id
-    WHERE ss.substrate_id = ${batch.substrate_id}
-    ORDER BY ss.supplement_id
-  `;
-
-  const supplementsArray = supplementsData.map((s) => ({
-    supplement_id: s.supplement_id,
-    supplement_name: s.supplement_name,
-    qty: parseFloat(s.qty || 0),
-    unit: s.unit,
-  }));
+  // Fetch substrate recipe details
+  const { mediums: mediumsArray, supplements: supplementsArray, expansionRatio } = await getSubstrateRecipe(sql, batch.substrate_id);
 
   // Calculate total mix for the batch (assuming recipe is per 1kg of final substrate)
   const bagletCount = batch.baglet_count;
   const bagletWeightG = batch.baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G;
-  const totalBatchWeightKg = (bagletCount * bagletWeightG) / 1000;
 
-  const mediumsForBatch = mediumsArray.map((m) => ({
-    ...m,
-    qty_g: m.qty_g * totalBatchWeightKg,
-  }));
-
-  const supplementsForBatch = supplementsArray.map((s) => ({
-    ...s,
-    qty: s.qty * totalBatchWeightKg,
-  }));
+  const { mediumsForBatch, supplementsForBatch } = calculateRecipeMix(
+    mediumsArray,
+    supplementsArray,
+    bagletCount,
+    bagletWeightG,
+    expansionRatio
+  );
 
   // Fetch baglet list for this batch
   const bagletsData = await sql`
@@ -347,7 +309,7 @@ export async function planBatch(
   // Format date as ddmmyyyy for batch_id
   const day = String(preparedDateObj.getDate()).padStart(2, '0');
   const month = String(preparedDateObj.getMonth() + 1).padStart(2, '0');
-  const year = preparedDateObj.getFullYear();
+  const year = String(preparedDateObj.getFullYear()).slice(-2);
   const dateFormatted = `${day}${month}${year}`;
 
   // BEGIN TRANSACTION
@@ -368,15 +330,12 @@ export async function planBatch(
 
     const strainInfo: StrainInfo = strainCheck[0] as StrainInfo;
 
-    // 2. Validate substrate_id and get substrate mix info from v_substrate_full
-    // IMPORTANT: v_substrate_full returns mediums and supplements as JSON arrays
+    // 2. Validate substrate_id and get substrate info from table
     const substrateCheck = await sql`
       SELECT
         substrate_id,
-        substrate_name,
-        mediums,
-        supplements
-      FROM v_substrate_full
+        substrate_name
+      FROM substrate
       WHERE substrate_id = ${substrate_id}
     `;
 
@@ -384,12 +343,15 @@ export async function planBatch(
       throw new Error(`Invalid substrate_id: ${substrate_id}`);
     }
 
-    // Extract substrate info (view already returns JSON arrays)
+    // Fetch substrate recipe details using helper
+    const { mediums, supplements, expansionRatio } = await getSubstrateRecipe(sql, substrate_id);
+
+    // Extract substrate info
     const substrateInfo: SubstrateInfo = {
       substrate_id: substrateCheck[0].substrate_id,
       substrate_name: substrateCheck[0].substrate_name,
-      mediums: substrateCheck[0].mediums || [],
-      supplements: substrateCheck[0].supplements || [],
+      mediums,
+      supplements,
     };
 
     // 3. Calculate batch_sequence
@@ -423,7 +385,7 @@ export async function planBatch(
 
     for (let i = 1; i <= baglet_count; i++) {
       const bagletSequence = i;
-      const seqPadded = String(bagletSequence).padStart(3, '0');
+      const seqPadded = String(bagletSequence).padStart(2, '0');
 
       // Baglet ID format: {batch_id}-{strain_code}-{strain_vendor_id}-{substrate_id}-{seq}
       const bagletId = `${batchId}-${strain_code}-${strainInfo.strain_vendor_id}-${substrate_id}-${seqPadded}`;
@@ -450,17 +412,13 @@ export async function planBatch(
     const mediums_per_baglet = substrateInfo.mediums; // This is actually Recipe Ratio (per kg) from DB view
     const supplements_per_baglet = substrateInfo.supplements;
 
-    const totalBatchWeightKg = (baglet_count * finalBagletWeightG) / 1000;
-
-    const mediums_for_batch = mediums_per_baglet.map((m: any) => ({
-      ...m,
-      qty_g: m.qty_g * totalBatchWeightKg,
-    }));
-
-    const supplements_for_batch = supplements_per_baglet.map((s: any) => ({
-      ...s,
-      qty: s.qty * totalBatchWeightKg,
-    }));
+    const { mediumsForBatch: mediums_for_batch, supplementsForBatch: supplements_for_batch } = calculateRecipeMix(
+      mediums_per_baglet,
+      supplements_per_baglet,
+      baglet_count,
+      finalBagletWeightG,
+      expansionRatio
+    );
 
     // COMMIT TRANSACTION
     await sql`COMMIT`;
@@ -534,7 +492,7 @@ export async function addBagletToBatch(
 
   const batchInfo = batchInfoResult[0];
   const nextSeq = batchInfo.max_seq + 1;
-  const seqPadded = String(nextSeq).padStart(3, '0');
+  const seqPadded = String(nextSeq).padStart(2, '0');
 
   // 2. Generate Deterministic ID
   const newBagletId = `${batchInfo.batch_id}-${batchInfo.strain_code}-${batchInfo.strain_vendor_id}-${batchInfo.substrate_id}-${seqPadded}`;
@@ -625,6 +583,7 @@ export async function updateBatchStatus(
         newStatus: toStatus as BagletStatus,
         notes: 'Bulk status update via batch workflow',
         user: updated_by,
+        skipCalculation: true,
       });
     }
 
@@ -643,6 +602,105 @@ export async function updateBatchStatus(
     await sql`ROLLBACK`;
     throw innerError;
   }
+}
+
+/**
+ * Helper to fetch substrate recipe details (mediums and supplements).
+ * Centralizes data fetching to ensure consistency.
+ */
+async function getSubstrateRecipe(
+  sql: NeonQueryFunction<false, false>,
+  substrateId: string
+) {
+  // Fetch mediums
+  const mediumsData = await sql`
+      SELECT sm.medium_id, m.medium_name, sm.qty_g
+      FROM substrate_medium sm
+      JOIN medium m ON sm.medium_id = m.medium_id
+      WHERE sm.substrate_id = ${substrateId}
+      ORDER BY sm.medium_id
+  `;
+
+  // Fetch supplements
+  const supplementsData = await sql`
+      SELECT ss.supplement_id, s.supplement_name, ss.qty, s.measure_type
+      FROM substrate_supplement ss
+      JOIN supplement s ON ss.supplement_id = s.supplement_id
+      WHERE ss.substrate_id = ${substrateId}
+      ORDER BY ss.supplement_id
+  `;
+
+  const mediums = mediumsData.map(m => ({
+    medium_id: m.medium_id,
+    medium_name: m.medium_name,
+    qty_g: parseFloat(m.qty_g || 0),
+  }));
+
+  const supplements = supplementsData.map(s => ({
+    supplement_id: s.supplement_id,
+    supplement_name: s.supplement_name,
+    qty: parseFloat(s.qty || 0),
+    unit: (s.measure_type || '') as string,
+  }));
+
+  const expansionRatioData = await sql`
+      SELECT expected_expansion_ratio 
+      FROM substrate 
+      WHERE substrate_id = ${substrateId}
+  `;
+  // Default to 2.5 (standard expansion) if missing/null to be safe
+  const expansionRatio = parseFloat(expansionRatioData[0]?.expected_expansion_ratio || APP_CONFIG.DEFAULT_EXPANSION_RATIO);
+
+  return { mediums, supplements, expansionRatio };
+}
+
+/**
+ * Helper to calculate total batch mix based on baglet count and weight.
+ * Centralizes the logic to avoid duplication in plan/details views.
+ * 
+ * **Expansion Ratio Logic:**
+ * The database stores recipe ratios per 1kg of *Dry Input*.
+ * Unlike simple multiplication, we must account for the specific *Expansion Ratio* of the substrate.
+ * 
+ * **Formula:**
+ * `Required Dry Input = (Total Target Wet Weight) / (Expansion Ratio)`
+ * 
+ * **Scenario Example 1 (Standard):**
+ * - Target: 10 baglets @ 2.5kg each = **25kg Wet Substrate**.
+ * - Substrate Expansion Ratio: **2.5** (1kg dry -> 2.5kg wet).
+ * - Calculation: `25kg / 2.5` = **10kg Dry Input**.
+ *
+ * **Scenario Example 2 (Custom):**
+ * - Target: 10 baglets @ 3.0kg each = **30kg Wet Substrate**.
+ * - Substrate Expansion Ratio: **2.5** (1kg dry -> 2.5kg wet).
+ * - Calculation: `30kg / 2.5` = **12kg Dry Input**.
+ */
+function calculateRecipeMix(
+  mediumsPerKg: Array<{ medium_id: string; medium_name: string; qty_g: number }>,
+  supplementsPerKg: Array<{ supplement_id: string; supplement_name: string; qty: number, unit?: string, measure_type?: string }>,
+  bagletCount: number,
+  bagletWeightG: number,
+  expansionRatio: number = 2.5
+) {
+  // 1. Calculate the TOTAL weight we want to end up with (Wet)
+  const totalTargetWetWeightKg = (bagletCount * bagletWeightG) / 1000;
+
+  // 2. Back-calculate the Dry Input weight needed to achieve that Wet weight
+  const totalDryInputWeightKg = totalTargetWetWeightKg / expansionRatio;
+
+  const mediumsForBatch = mediumsPerKg.map((m) => ({
+    ...m,
+    qty_g: m.qty_g * totalDryInputWeightKg,
+  }));
+
+  const supplementsForBatch = supplementsPerKg.map((s) => ({
+    ...s,
+    qty: s.qty * totalDryInputWeightKg,
+    // Normalize unit/measure_type field name -> ensure it's a string
+    unit: (s.unit || s.measure_type || '') as string
+  }));
+
+  return { mediumsForBatch, supplementsForBatch };
 }
 
 // ============================================================
@@ -691,3 +749,4 @@ export async function exportBagletsForQRLabels(
     mushroom_name: b.mushroom_name,
   }));
 }
+
