@@ -99,6 +99,7 @@ INSERT INTO substrate_medium (substrate_id, medium_id, qty_g) VALUES
 ------------------------------------------------------------
 INSERT INTO substrate_supplement (substrate_id, supplement_id, qty) VALUES
 -- A01: no supplements
+('A01', 3, 1600);
 
 -- A02: Coconut Water
 ('A02', 1, 300),  -- Coconut Water (ml)
@@ -106,9 +107,11 @@ INSERT INTO substrate_supplement (substrate_id, supplement_id, qty) VALUES
 
 
 -- A03: no supplements
+('A03', 3, 1600);
 
 -- A04: Eggshell Powder
 ('A04', 2, 10),   -- Eggshell Powder (g)
+('A04', 3, 1600);
 
 -- A05: Coconut Water
 ('A05', 1, 300),  -- Coconut Water (ml)
