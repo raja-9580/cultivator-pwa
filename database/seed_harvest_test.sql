@@ -70,7 +70,7 @@ SELECT
     WHEN (CURRENT_DATE - nbd.p_date) BETWEEN 51 AND 60 THEN 4
     ELSE 5
   END,
-  now_ist() - ((seq * 2) || ' hours')::interval,
+  now() - ((seq * 2) || ' hours')::interval,
   'tester'
 FROM new_batches_data nbd
 CROSS JOIN generate_series(1, 10) as seq

@@ -1,19 +1,19 @@
 /**
- * Date and time utilities - simple IST handling
- * Assumes all users are in IST timezone
+ * Date and time utilities - Universal Time Handling
+ * Relies on native browser localization and TIMESTAMPTZ storage.
  */
 
 /**
- * Get current datetime in browser's local timezone
+ * Get current datetime object
  */
-export function getCurrentISTDateTime(): Date {
+export function getCurrentDateTime(): Date {
     return new Date();
 }
 
 /**
  * Get current datetime formatted for datetime-local input (YYYY-MM-DDTHH:mm)
  */
-export function getCurrentISTForInput(): string {
+export function getCurrentDateTimeForInput(): string {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -27,7 +27,7 @@ export function getCurrentISTForInput(): string {
 /**
  * Convert any Date to datetime-local input format (YYYY-MM-DDTHH:mm)
  */
-export function toISTInputFormat(date: Date): string {
+export function toDateTimeLocalFormat(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -38,15 +38,14 @@ export function toISTInputFormat(date: Date): string {
 }
 
 /**
- * Get maximum allowed datetime for datetime-local input
+ * Get maximum allowed datetime for datetime-local input (Now)
  */
 export function getMaxDateTimeForInput(): string {
-    return getCurrentISTForInput();
+    return getCurrentDateTimeForInput();
 }
 
 /**
- * Pass datetime-local value directly (no conversion needed)
- * Database treats all timestamps as IST
+ * Pass datetime-local value directly
  */
 export function inputToISOString(input: string): string {
     return input || '';

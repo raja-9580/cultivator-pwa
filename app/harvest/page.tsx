@@ -51,7 +51,7 @@ function HarvestContent() {
 
     useEffect(() => {
         loadStatsAndReady();
-        // Initialized as empty so we use now_ist() by default
+        // Initialized as empty so we use now() by default
 
 
         if (autoBagletId) {
