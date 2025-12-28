@@ -102,16 +102,16 @@ This document captures **why each technology was chosen** and **how we structure
 
 ---
 
-### 7️⃣ Timezone Management — **IST (India Standard Time)**
+### 7️⃣ Timezone Management — **Local Display, Global Storage**
 
 | Factor | Consideration |
 | :--- | :--- |
-| **Why IST** | The farm operation is physically located in India; logs must match lab clocks |
-| **DB standard** | Database stores all timestamps in UTC, but computed via `now_ist()` |
-| **Logic decision** | Never use raw `now()` in SQL to avoid server-region drift (UTC/US-East) |
-| **Implementation** | Custom SQL function `now_ist()` returns `(now() at time zone 'utc' at time zone 'ist')` |
+| **Why TIMESTAMPTZ** | Eliminates manual offset math and "ghost shifts" across server regions |
+| **DB standard** | Database stores all timestamps in `TIMESTAMPTZ` (UTC internally) |
+| **Logic decision** | Use standard `CURRENT_TIMESTAMP` in SQL; let the DB handle absolute moments |
+| **Implementation** | No manual `now_ist()` wrappers needed; uses native `now()` shorthand |
 
-➡️ **Decision**: All business logs and status changes use **IST**. We use the custom `now_ist()` function for all timestamp insertions and updates to ensure lab-clock parity.
+➡️ **Decision**: All business logs and status changes use **TIMESTAMPTZ**. We rely on PostgreSQL's native timezone awareness and typical browser localization to ensure lab-clock parity without hardcoded shifts. We use the standard `now()` shorthand in logic.
 
 ---
 

@@ -386,7 +386,7 @@ export async function planBatch(
       ) VALUES (
         ${batchId}, ${farm_id}, ${preparedDateStr}, ${batchSequence},
         ${substrate_id}, ${strain_code}, ${baglet_count}, ${finalBagletWeightG},
-        ${created_by}, now_ist(), FALSE
+        ${created_by}, now(), FALSE
       )
     `;
 

@@ -46,7 +46,7 @@ export async function updateBagletStatus(
     UPDATE baglet
     SET 
       current_status = ${newStatus},
-      status_updated_at = now_ist()
+      status_updated_at = now()
     WHERE baglet_id = ${bagletId}
   `;
 
@@ -102,7 +102,7 @@ export async function updateBagletMetrics(
       latest_temp_c = COALESCE(${temperature}::numeric, latest_temp_c),
       latest_humidity_pct = COALESCE(${humidity}::numeric, latest_humidity_pct),
       latest_ph = COALESCE(${ph}::numeric, latest_ph),
-      logged_timestamp = now_ist() 
+      logged_timestamp = now() 
     WHERE baglet_id = ${bagletId}
   `;
 
@@ -425,9 +425,9 @@ export async function createBagletWithLog(
       logged_by, logged_timestamp, is_deleted
     ) VALUES (
       ${bagletId}, ${batchId}, ${bagletSequence},
-      ${initialStatus}, now_ist(),
+      ${initialStatus}, now(),
       NULL, NULL, NULL,
-      ${createdBy}, now_ist(), FALSE
+      ${createdBy}, now(), FALSE
     )
   `;
 
@@ -438,7 +438,7 @@ export async function createBagletWithLog(
       notes, logged_by, logged_timestamp
     ) VALUES (
       ${bagletId}, ${batchId}, NULL, ${initialStatus},
-      ${notes}, ${createdBy}, now_ist()
+      ${notes}, ${createdBy}, now()
     )
   `;
 }

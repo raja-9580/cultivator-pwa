@@ -53,7 +53,7 @@ WITH numbered_harvests AS (
 )
 UPDATE harvest h
 SET harvested_timestamp = 
-  now_ist()
+  now()
   -- Month Distribution: 0..5 months ago (Round Robin)
   - (((nh.global_rn % 6)) || ' months')::interval 
   -- Day Of Month: FORCE different days for different flushes.

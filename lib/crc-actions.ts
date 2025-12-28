@@ -190,12 +190,12 @@ export async function submitCRCAnalysis(sql: any, data: SubmitCRCAnalysisInput) 
                 INSERT INTO baglet_contamination (
                     baglet_id, contamination_code, notes, logged_by, logged_timestamp
                 ) VALUES (
-                    ${bagletId}, ${finding.contaminationCode}, ${finding.notes || null}, ${user || 'system'}, now_ist()
+                    ${bagletId}, ${finding.contaminationCode}, ${finding.notes || null}, ${user || 'system'}, now()
                 )
                 ON CONFLICT (baglet_id, contamination_code) 
                 DO UPDATE SET 
                     notes = EXCLUDED.notes,
-                    logged_timestamp = now_ist()
+                    logged_timestamp = now()
             `;
         }
 

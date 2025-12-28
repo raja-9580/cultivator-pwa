@@ -15,7 +15,7 @@ import { BATCH_LABELS } from '@/lib/labels';
 import { useSession } from 'next-auth/react';
 
 
-import { formatDate, formatDateTimeIST } from '@/lib/time-utils';
+import { formatDate, formatDateTime } from '@/lib/time-utils';
 
 export default function BatchDetailPage() {
     const params = useParams();
@@ -364,7 +364,7 @@ export default function BatchDetailPage() {
                                 Created
                             </div>
                             <div className="text-base font-semibold text-gray-200">
-                                {formatDateTimeIST(batch.createdAt)}
+                                {formatDateTime(batch.createdAt)}
                             </div>
                             <div className="text-xs text-gray-400 mt-0.5">
                                 by {batch.createdBy}

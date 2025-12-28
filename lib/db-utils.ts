@@ -9,5 +9,5 @@ import { sql } from './db';
  * @param manualDate - The YYYY-MM-DD HH:mm string from a datetime-local input
  */
 export function applySystemPrecision(manualDate: string | null | undefined) {
-    return sql`COALESCE((${manualDate || null}::timestamp + (now_ist() - date_trunc('minute', now_ist()))), now_ist())`;
+    return sql`COALESCE((${manualDate || null}::timestamp + (now() - date_trunc('minute', now()))), now())`;
 }
