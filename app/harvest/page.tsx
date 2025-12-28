@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getMaxDateTimeForInput } from '@/lib/date-utils';
 import Link from 'next/link';
 import { Search, QrCode, Weight, FileText, CheckCircle, TrendingUp, Package, History } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -43,12 +44,15 @@ function HarvestContent() {
     const [baglet, setBaglet] = useState<BagletDetails | null>(null);
     const [weight, setWeight] = useState('');
     const [notes, setNotes] = useState('');
+    const [harvestDateTime, setHarvestDateTime] = useState('');
     const [stats, setStats] = useState<HarvestStats | null>(null);
     const [readyBaglets, setReadyBaglets] = useState<ReadyBaglet[]>([]);
     const [statsLoading, setStatsLoading] = useState(true);
 
     useEffect(() => {
         loadStatsAndReady();
+        // Initialized as empty so we use now_ist() by default
+
 
         if (autoBagletId) {
             setSearchId(autoBagletId);
@@ -126,6 +130,7 @@ function HarvestContent() {
                     bagletId: baglet.id,
                     weight: weightNum,
                     notes: notes || undefined,
+                    harvestedAt: harvestDateTime || undefined,
                 })
             });
 
@@ -137,6 +142,7 @@ function HarvestContent() {
                 setSearchId('');
                 setWeight('');
                 setNotes('');
+                setHarvestDateTime('');
                 // Small delay to ensure DB write propagation
                 setTimeout(() => {
                     router.refresh(); // Clear Next.js client cache
@@ -222,6 +228,7 @@ function HarvestContent() {
                                 setSearchId('');
                                 setWeight('');
                                 setNotes('');
+                                setHarvestDateTime('');
                             }}
                             className="flex-shrink-0 text-xs font-medium text-gray-500 hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-white/5 transition-colors mt-0.5"
                         >
@@ -268,6 +275,23 @@ function HarvestContent() {
                                     />
                                 </div>
                             </div>
+
+                            <details className="group">
+                                <summary className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors p-1 select-none">
+                                    <FileText size={14} />
+                                    <span>Change harvest date/time (optional)</span>
+                                </summary>
+                                <div className="mt-2">
+                                    <input
+                                        type="datetime-local"
+                                        value={harvestDateTime}
+                                        onChange={(e) => setHarvestDateTime(e.target.value)}
+                                        max={getMaxDateTimeForInput()}
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent-leaf/50 transition-colors [color-scheme:dark]"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Defaults to current time. Use this to backdate harvests.</p>
+                                </div>
+                            </details>
 
                             <details className="group">
                                 <summary className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors p-1 select-none">

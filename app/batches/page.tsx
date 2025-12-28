@@ -4,7 +4,7 @@ import { useState, useEffect, Fragment, useMemo } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Select from '@/components/ui/Select';
-import { FileText, Database } from 'lucide-react';
+import { FileText, Info } from 'lucide-react';
 
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import PlanBatchModal from '@/components/batches/PlanBatchModal';
@@ -119,6 +119,7 @@ export default function BatchesPage() {
   // Preparation State
   const [preparingBatchData, setPreparingBatchData] = useState<BatchDetails | null>(null);
   const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
+  const [openSubstrateId, setOpenSubstrateId] = useState<string | null>(null);
 
   const router = useRouter();
   const { data: session } = useSession();
@@ -372,6 +373,8 @@ export default function BatchesPage() {
                       onStatusUpdate={handleStatusUpdate}
                       onPrepare={handlePrepare}
                       updatingBatch={updatingBatch}
+                      openSubstrateId={openSubstrateId}
+                      onToggleSubstrate={(id) => setOpenSubstrateId(openSubstrateId === id ? null : id)}
                     />
                   ))}
                 </div>
@@ -387,8 +390,8 @@ export default function BatchesPage() {
       </div>
 
       {/* Desktop: Ultra-Dense Table */}
-      <Card className={`hidden md:block transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'} bg-dark-surface/40 border-white/5 p-0 overflow-hidden`}>
-        <div className="overflow-x-auto">
+      <Card className={`hidden md:block transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'} bg-dark-surface/40 border-white/5 p-0`}>
+        <div className="">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
@@ -419,73 +422,94 @@ export default function BatchesPage() {
                       </td>
                     </tr>
                   )}
-                  {(!group.title || expandedGroups[group.title]) && group.items.map((batch) => (
-                    <tr key={batch.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition-all group/row">
-                      <td className="py-2 px-4 align-middle">
-                        <div className="flex flex-col">
-                          <Link href={`/batches/${batch.id}`} className="text-[13px] font-black text-accent-leaf hover:text-white transition-all tracking-tighter">
-                            {batch.id}
-                          </Link>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-black text-gray-600">#{batch.batchSequence}</span>
-                            <span className="text-[9px] font-black text-accent-leaf/60 uppercase tracking-tighter">{batch.actualBagletCount} UNITS</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 align-middle">
-                        <div className="flex items-center gap-3">
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[11px] font-bold text-white uppercase truncate max-w-[150px] leading-tight">{batch.mushroomType}</span>
-                            <span className="text-[9px] text-gray-600 font-bold tracking-tight uppercase truncate max-w-[150px] line-clamp-1">{batch.vendorName}</span>
-                          </div>
-                          <details className="group/substrate relative">
-                            <summary className="p-1 px-1.5 rounded bg-white/[0.03] border border-white/10 text-gray-600 hover:text-accent-leaf list-none cursor-pointer transition-colors active:scale-90">
-                              <Database size={11} />
-                            </summary>
-                            <div className="absolute bottom-full left-0 mb-3 w-56 p-3 rounded-xl bg-[#111] border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95">
-                              <div className="flex flex-col gap-2">
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1">Substrate</span>
-                                <span className="text-[11px] text-gray-300 font-medium leading-relaxed">{batch.substrateDescription}</span>
-                                <span className="text-[9px] text-gray-600 font-mono uppercase tracking-tighter">{batch.substrateCode}</span>
-                              </div>
+                  {(!group.title || expandedGroups[group.title]) && group.items.map((batch, idx) => {
+                    const isLastItem = idx === group.items.length - 1;
+                    const openDownwards = idx < 2 && !(group.items.length > 1 && isLastItem);
+
+                    return (
+                      <tr key={batch.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition-all group/row">
+                        <td className="py-2 px-4 align-middle">
+                          <div className="flex flex-col">
+                            <Link href={`/batches/${batch.id}`} className="text-[13px] font-black text-accent-leaf hover:text-white transition-all tracking-tighter">
+                              {batch.id}
+                            </Link>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-black text-gray-600">#{batch.batchSequence}</span>
+                              <span className="text-[9px] font-black text-accent-leaf/60 uppercase tracking-tighter">{batch.actualBagletCount} UNITS</span>
                             </div>
-                          </details>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 align-middle">
-                        <span className="text-[11px] font-bold text-gray-400 capitalize">
-                          {(batch.createdBy?.split('@')[0] || '—').toLowerCase()}
-                        </span>
-                      </td>
-                      <td className="py-2 px-4 align-middle text-[11px] font-bold text-gray-500 whitespace-nowrap">
-                        {formatDate(batch.preparedDate)}
-                      </td>
-                      <td className="py-2 px-4 align-middle text-right">
-                        <div className="flex gap-2 justify-end items-center">
-                          {['PREPARE', 'RESUME'].includes(getBatchWorkflowStage(batch.bagletStatusCounts)) && (
-                            <button onClick={() => handlePrepare(batch.id)} className="h-7 px-3 rounded-md bg-accent-leaf text-black text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
-                              {getBatchWorkflowStage(batch.bagletStatusCounts) === 'RESUME' ? 'RESUME' : 'PREPARE'}
-                            </button>
-                          )}
-                          {getBatchWorkflowStage(batch.bagletStatusCounts) === 'STERILIZE' && (
-                            <button onClick={() => handleStatusUpdate(batch.id, 'sterilize')} className="h-7 px-4 rounded-md bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
-                              STERILIZE
-                            </button>
-                          )}
-                          {getBatchWorkflowStage(batch.bagletStatusCounts) === 'INOCULATE' && (
-                            <button onClick={() => handleStatusUpdate(batch.id, 'inoculate')} className="h-7 px-4 rounded-md bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
-                              INOCULATE
-                            </button>
-                          )}
-                          {getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to) > 0 && (
-                            <button onClick={() => { window.location.href = `/api/batches/${batch.id}/export-labels`; }} className="p-1.5 rounded-md bg-white/5 border border-white/10 text-gray-500 hover:text-white transition-colors">
-                              <FileText size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                        <td className="py-2 px-4 align-middle">
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[11px] font-bold text-white uppercase truncate max-w-[150px] leading-tight">{batch.mushroomType}</span>
+                              <span className="text-[9px] text-gray-600 font-bold tracking-tight uppercase truncate max-w-[150px] line-clamp-1">{batch.vendorName}</span>
+                            </div>
+                            <div className="relative">
+                              <button
+                                onClick={() => setOpenSubstrateId(openSubstrateId === batch.id ? null : batch.id)}
+                                className={`p-1 px-1.5 rounded border transition-all active:scale-90 ${openSubstrateId === batch.id
+                                  ? 'bg-accent-leaf text-black border-accent-leaf'
+                                  : 'bg-white/[0.03] border-white/10 text-gray-600 hover:text-accent-leaf'}`}
+                              >
+                                <Info size={11} />
+                              </button>
+
+                              {openSubstrateId === batch.id && (
+                                <div className={`absolute z-50 w-56 p-3 rounded-xl bg-[#0A0A0A] border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-200 left-0 ${openDownwards ? 'top-full mt-2' : 'bottom-full mb-3'}`}>
+                                  <div className="flex flex-col gap-2">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1">Batch Details</span>
+
+                                    <span className="text-[11px] text-gray-300 font-medium leading-relaxed">{batch.substrateDescription}</span>
+                                    <span className="text-[9px] text-gray-600 font-mono uppercase tracking-tighter">{batch.substrateCode}</span>
+
+                                    <div className="flex justify-between items-center py-0.5 border-t border-white/5 mt-1 pt-1">
+                                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">EXP. RATIO</span>
+                                      <span className={`text-[10px] font-mono font-black tracking-tight ${batch.actualExpansionRatio ? 'text-accent-leaf' : 'text-gray-600'}`}>
+                                        {batch.actualExpansionRatio ? `${batch.actualExpansionRatio}x` : '—'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2 px-4 align-middle">
+                          <span className="text-[11px] font-bold text-gray-400 capitalize">
+                            {(batch.createdBy?.split('@')[0] || '—').toLowerCase()}
+                          </span>
+                        </td>
+                        <td className="py-2 px-4 align-middle text-[11px] font-bold text-gray-500 whitespace-nowrap">
+                          {formatDate(batch.preparedDate)}
+                        </td>
+                        <td className="py-2 px-4 align-middle text-right">
+                          <div className="flex gap-2 justify-end items-center">
+                            {['PREPARE', 'RESUME'].includes(getBatchWorkflowStage(batch.bagletStatusCounts)) && (
+                              <button onClick={() => handlePrepare(batch.id)} className="h-7 px-3 rounded-md bg-accent-leaf text-black text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                                {getBatchWorkflowStage(batch.bagletStatusCounts) === 'RESUME' ? 'RESUME' : 'PREPARE'}
+                              </button>
+                            )}
+                            {getBatchWorkflowStage(batch.bagletStatusCounts) === 'STERILIZE' && (
+                              <button onClick={() => handleStatusUpdate(batch.id, 'sterilize')} className="h-7 px-4 rounded-md bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                                STERILIZE
+                              </button>
+                            )}
+                            {getBatchWorkflowStage(batch.bagletStatusCounts) === 'INOCULATE' && (
+                              <button onClick={() => handleStatusUpdate(batch.id, 'inoculate')} className="h-7 px-4 rounded-md bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                                INOCULATE
+                              </button>
+                            )}
+                            {getStatusCount(batch.bagletStatusCounts, INOCULATION_TRANSITION.to) > 0 && (
+                              <button onClick={() => { window.location.href = `/api/batches/${batch.id}/export-labels`; }} className="p-1.5 rounded-md bg-white/5 border border-white/10 text-gray-500 hover:text-white transition-colors">
+                                <FileText size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </Fragment>
               ))}
             </tbody>

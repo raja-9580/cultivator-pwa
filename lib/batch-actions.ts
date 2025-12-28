@@ -39,6 +39,7 @@ export async function getAllBatches(
       b.baglet_count,
       b.logged_timestamp,
       b.logged_by,
+      b.actual_expansion_ratio,
       f.farm_name,
       s.substrate_name,
       st.strain_code as strain_display_code,
@@ -84,6 +85,7 @@ export async function getAllBatches(
     substrateDescription: row.substrate_name,
     plannedBagletCount: row.baglet_count,
     actualBagletCount: parseInt(row.actual_baglet_count || '0'),
+    actualExpansionRatio: row.actual_expansion_ratio ? parseFloat(row.actual_expansion_ratio) : null,
     createdDate: row.logged_timestamp,
     preparedDate: row.prepared_date,
     bagletStatusCounts: row.baglet_status_counts || {},
@@ -146,6 +148,7 @@ export async function getBatchDetails(
       sv.vendor_name,
       -- Actual baglet count
       (SELECT COUNT(*) FROM baglet WHERE batch_id = b.batch_id AND is_deleted = FALSE) as actual_baglet_count,
+      b.actual_expansion_ratio,
       -- Status distribution
       (
         SELECT json_object_agg(current_status, count)
@@ -217,6 +220,11 @@ export async function getBatchDetails(
     createdAt: b.logged_timestamp,
   }));
 
+  // Calculate total baglet weight from actual baglets
+  const totalBagletWeightKg = baglets.reduce((sum, b) => {
+    return sum + (b.weight ? b.weight / 1000 : 0);
+  }, 0);
+
   // Build and return response (flattened structure)
   return {
     id: batch.batch_id,
@@ -242,6 +250,9 @@ export async function getBatchDetails(
     plannedBagletCount: batch.baglet_count,
     actualBagletCount: parseInt(batch.actual_baglet_count || '0'),
     bagletWeightG: batch.baglet_weight_g || APP_CONFIG.DEFAULT_BAGLET_WEIGHT_G,
+    totalBagletWeightKg: parseFloat(totalBagletWeightKg.toFixed(2)),
+    actualExpansionRatio: batch.actual_expansion_ratio ? parseFloat(batch.actual_expansion_ratio) : null,
+    expectedExpansionRatio: expansionRatio,
     bagletStatusCounts: batch.baglet_status_counts || {},
     createdBy: batch.logged_by,
     createdAt: batch.logged_timestamp,

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { Baglet, BagletStatus } from '@/lib/types';
+import { formatDateMmm, formatTimeIST } from '@/lib/time-utils';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -126,10 +127,7 @@ export default function BagletDetailPage() {
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                     <div className="space-y-2">
                         <h1 className="text-xl md:text-2xl font-mono font-bold text-white tracking-normal uppercase leading-tight break-all max-w-2xl">
-                            {baglet.id?.substring(0, baglet.id.lastIndexOf('-')) || baglet.id}
-                            <span className="text-accent-neon-green/40 ml-3 font-mono text-[10px] tracking-widest align-middle">
-                                #{baglet.id?.split('-').pop() || ''}
-                            </span>
+                            {baglet.id}
                         </h1>
 
                         {/* Meta Row: Batch & Mushroom */}
@@ -219,7 +217,7 @@ export default function BagletDetailPage() {
                                             <div key={h.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
                                                 <div className="flex flex-col">
                                                     <span className="text-[9px] font-bold text-gray-400 uppercase">Flush #{harvests.length - i}</span>
-                                                    <span className="text-[10px] text-gray-500">{new Date(h.date).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] text-gray-500">{formatDateMmm(h.date)}</span>
                                                 </div>
                                                 <span className="font-mono font-bold text-white">{h.weight}g</span>
                                             </div>
@@ -249,7 +247,7 @@ export default function BagletDetailPage() {
                                                     <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-1">
                                                         <div className="flex justify-between items-start">
                                                             <span className="text-xs font-black text-red-200 uppercase">{c.contaminant}</span>
-                                                            <span className="text-[8px] text-gray-500 font-mono">{new Date(c.timestamp).toLocaleDateString()}</span>
+                                                            <span className="text-[8px] text-gray-500 font-mono">{formatDateMmm(c.timestamp)}</span>
                                                         </div>
                                                         <p className="text-[10px] text-gray-400 leading-relaxed">{c.notes || 'No specific notes logged.'}</p>
                                                         <div className="pt-1">
@@ -297,9 +295,14 @@ export default function BagletDetailPage() {
                                     <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-white/[0.02] shadow-xl group-hover:border-white/10 transition-all">
                                         <div className="flex items-center justify-between space-x-2 mb-1">
                                             <div className="font-bold text-white text-xs uppercase tracking-tight">{item.status.replace(/_/g, ' ')}</div>
-                                            <time className="font-mono text-[9px] text-accent-neon-green/80 font-bold whitespace-nowrap">
-                                                {new Date(item.timestamp).toLocaleDateString()}
-                                            </time>
+                                            <div className="flex flex-col items-end">
+                                                <time className="font-mono text-[9px] text-accent-neon-green/80 font-bold whitespace-nowrap">
+                                                    {formatDateMmm(item.timestamp)}
+                                                </time>
+                                                <span className="font-mono text-[8px] text-gray-600 font-medium">
+                                                    {formatTimeIST(item.timestamp)}
+                                                </span>
+                                            </div>
                                         </div>
                                         {item.notes && <div className="text-[10px] text-gray-400 mb-2 leading-snug">{item.notes}</div>}
                                         <div className="flex items-center gap-2">

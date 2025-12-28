@@ -34,6 +34,9 @@ const config: Config = {
       spacing: {
         '13': '3.25rem',
       },
+      fontSize: {
+        xxs: '0.625rem',
+      },
     },
   },
   plugins: [],
