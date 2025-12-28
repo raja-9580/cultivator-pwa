@@ -34,6 +34,7 @@ export interface Batch {
   substrateDescription: string;
   plannedBagletCount: number;
   actualBagletCount: number;
+  actualExpansionRatio: number | null;
   createdDate: Date;
   preparedDate: Date;
   notes?: string;
@@ -93,6 +94,7 @@ export interface BatchListItem {
   substrateDescription: string;
   plannedBagletCount: number;
   actualBagletCount: number;
+  actualExpansionRatio: number | null;
   createdDate: string;
   preparedDate: string;
   bagletStatusCounts: Record<string, number>;
@@ -124,6 +126,9 @@ export interface BatchDetails {
   plannedBagletCount: number;
   actualBagletCount: number;
   bagletWeightG: number;
+  totalBagletWeightKg: number;
+  actualExpansionRatio: number | null;
+  expectedExpansionRatio: number;
   bagletStatusCounts: Record<string, number>;
   createdBy: string;
   createdAt: string;

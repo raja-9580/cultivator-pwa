@@ -24,7 +24,7 @@ const statusVariantMap: Record<string, 'success' | 'warning' | 'info' | 'danger'
   [BagletStatus.STERILIZED]: 'warning',
   [BagletStatus.INOCULATED]: 'warning',
   [BagletStatus.INCUBATED]: 'warning',
-  [BagletStatus.PINNED]: 'info',
+  [BagletStatus.PINNED]: 'success',  // Changed from 'info' to differentiate from PLANNED
   [BagletStatus.HARVESTED]: 'success',
   [BagletStatus.CONTAMINATED]: 'danger',
   [BagletStatus.DISPOSED]: 'neutral',

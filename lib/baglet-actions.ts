@@ -330,9 +330,9 @@ export async function getBagletStatusHistory(
   return await sql`
     SELECT 
       status as status,
-      previous_status as previousStatus,
+      previous_status as "previousStatus",
       notes,
-      logged_by as loggedBy,
+      logged_by as "loggedBy",
       status_timestamp as timestamp
     FROM baglet_status_log
     WHERE baglet_id = ${bagletId}
@@ -353,7 +353,7 @@ export async function getBagletHarvests(
       harvest_weight_g as weight,
       harvested_timestamp as date,
       notes,
-      logged_by as loggedBy
+      logged_by as "loggedBy"
     FROM harvest
     WHERE baglet_id = ${bagletId}
     ORDER BY harvested_timestamp DESC
@@ -373,7 +373,7 @@ export async function getBagletContaminationFindings(
       c.contamination_type as type, 
       c.contaminant, 
       bc.notes,
-      bc.logged_by as loggedBy,
+      bc.logged_by as "loggedBy",
       bc.logged_timestamp as timestamp
     FROM baglet_contamination bc
     JOIN contamination_catalog c ON bc.contamination_code = c.contamination_code
@@ -516,5 +516,5 @@ export async function checkAndCalculateExpansionRatio(
     WHERE batch_id = ${batchId}
   `;
 
-  console.log(`✅ Calculated Actual Expansion Ratio for ${batchId}: ${actualExpansionRatio.toFixed(2)}`);
+  console.log(`? Calculated Actual Expansion Ratio for ${batchId}: ${actualExpansionRatio.toFixed(2)}`);
 }

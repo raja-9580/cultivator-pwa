@@ -31,6 +31,7 @@ export const RecordHarvestSchema = z.object({
     weight: z.number().positive('Weight must be greater than 0'),
     notes: z.string().optional(),
     harvestedBy: z.string().min(1, 'User is required'),
+    harvestedAt: z.string().optional(), // datetime-local format: "YYYY-MM-DDTHH:mm:ss"
 });
 
 export type RecordHarvestInput = z.infer<typeof RecordHarvestSchema>;

@@ -4,6 +4,7 @@ import { BagletStatus } from './types';
 import { getBagletById } from './baglet-actions';
 import { getAvailableTransitions, HARVEST_READY_STATUSES } from './baglet-workflow';
 import { APP_CONFIG } from './config';
+import { applySystemPrecision } from './db-utils';
 
 // ============================================================
 // VALIDATE BAGLET FOR HARVEST
@@ -169,7 +170,7 @@ export async function recordHarvest(
   sql: NeonQueryFunction<false, false>,
   input: RecordHarvestInput
 ): Promise<RecordHarvestResult> {
-  const { bagletId, weight, notes, harvestedBy } = input;
+  const { bagletId, weight, notes, harvestedBy, harvestedAt } = input;
 
   await sql`BEGIN`;
 
@@ -196,7 +197,6 @@ export async function recordHarvest(
     const currentStatus = baglet.current_status as BagletStatus;
     const flushNumber = (baglet.harvest_count || 0) + 1;
 
-    // 2. Insert harvest record
     const harvestInsert = await sql`
       INSERT INTO harvest (
         baglet_id,
@@ -210,7 +210,7 @@ export async function recordHarvest(
         ${bagletId},
         ${baglet.batch_id},
         ${weight},
-        now_ist(),
+        ${applySystemPrecision(harvestedAt)},
         ${notes || null},
         ${harvestedBy},
         now_ist()

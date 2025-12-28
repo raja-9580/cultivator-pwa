@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { RecordHarvestSchema } from '@/lib/validation-schemas';
 import { recordHarvest } from '@/lib/harvest-actions';
 
 export const dynamic = 'force-dynamic';
 
-const sql = neon(process.env.DATABASE_URL!);
-
 /**
  * POST /api/harvest/record
  */
 export async function POST(req: NextRequest) {
     try {
+        const sql = getSql();
         // Get authenticated user
         const session = await getServerSession();
         if (!session?.user?.email) {

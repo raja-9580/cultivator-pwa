@@ -15,27 +15,7 @@ import { BATCH_LABELS } from '@/lib/labels';
 import { useSession } from 'next-auth/react';
 
 
-function formatDate(dateString: string): string {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-function formatDateTime(dateString: string): string {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
+import { formatDate, formatDateTimeIST } from '@/lib/time-utils';
 
 export default function BatchDetailPage() {
     const params = useParams();
@@ -384,10 +364,33 @@ export default function BatchDetailPage() {
                                 Created
                             </div>
                             <div className="text-base font-semibold text-gray-200">
-                                {formatDateTime(batch.createdAt)}
+                                {formatDateTimeIST(batch.createdAt)}
                             </div>
                             <div className="text-xs text-gray-400 mt-0.5">
                                 by {batch.createdBy}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Total Weight
+                            </div>
+                            <div className="text-base font-semibold text-gray-200">
+                                {batch.totalBagletWeightKg} <span className="text-xs text-gray-500">kg</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                Expansion Ratio
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <div className="text-base font-semibold text-accent-leaf">
+                                    {batch.actualExpansionRatio ? `${batch.actualExpansionRatio}x` : '—'} <span className="text-[10px] text-gray-500 font-normal uppercase">ACTUAL</span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                    {batch.expectedExpansionRatio}x <span className="text-[9px] opacity-70 uppercase">TARGET</span>
+                                </div>
                             </div>
                         </div>
 
